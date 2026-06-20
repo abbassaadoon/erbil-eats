@@ -221,10 +221,14 @@
       <div class="header-top">
         <div>
           <div class="greeting">Admin panel</div>
-          <div class="app-title" style="font-size:18px;">Pending owners</div>
+          <div class="app-title" style="font-size:18px;">Erbil Eats</div>
         </div>
         <div class="avatar-btn" onclick="handleLogout()" title="Tap to log out">⎋</div>
       </div>
+    </div>
+    <div class="owner-tabs">
+      <div class="owner-tab active" id="admin-tab-pending" onclick="switchAdminTab('pending')">Pending owners</div>
+      <div class="owner-tab" id="admin-tab-users" onclick="switchAdminTab('users')">All users</div>
     </div>
     <div class="content" id="admin-content">
       <!-- populated by JS -->
@@ -1137,9 +1141,27 @@ async function updateNotificationBadge() {
 }
 
 // ===== ADMIN DASHBOARD =====
+let activeAdminTab = 'pending';
+
 async function loadAdminDashboard() {
   showScreen('loading-screen');
-  
+  activeAdminTab = 'pending';
+  showScreen('admin-screen');
+  switchAdminTab('pending');
+}
+
+function switchAdminTab(tab) {
+  activeAdminTab = tab;
+  document.getElementById('admin-tab-pending').classList.toggle('active', tab === 'pending');
+  document.getElementById('admin-tab-users').classList.toggle('active', tab === 'users');
+  if (tab === 'pending') renderPendingOwners();
+  else renderAllUsers();
+}
+
+async function renderPendingOwners() {
+  const container = document.getElementById('admin-content');
+  container.innerHTML = '<div class="empty-state">Loading...</div>';
+
   const { data: pending, error } = await sb
     .from('profiles')
     .select('*, restaurants(name)')
@@ -1148,14 +1170,12 @@ async function loadAdminDashboard() {
     .order('created_at', { ascending: true });
 
   if (error) {
-    showToast('Could not load pending owners: ' + error.message);
+    container.innerHTML = '<div class="empty-state">Could not load pending owners.</div>';
     return;
   }
 
-  const container = document.getElementById('admin-content');
   if (!pending || !pending.length) {
     container.innerHTML = '<div class="empty-state" style="padding:60px 24px;">No pending owner requests.<br>They\'ll appear here when restaurant owners sign up.</div>';
-    showScreen('admin-screen');
     return;
   }
 
@@ -1165,7 +1185,6 @@ async function loadAdminDashboard() {
         <div>
           <div class="booking-name">${escapeHtml(p.full_name)}</div>
           <div class="booking-detail">${escapeHtml(p.restaurants?.name || 'Unknown restaurant')}</div>
-          <div class="booking-detail">${escapeHtml(p.id)}</div>
         </div>
         <div>
           <div class="booking-time" style="color:#BA7517;">Pending</div>
@@ -1177,8 +1196,71 @@ async function loadAdminDashboard() {
       </div>
     </div>
   `).join('');
+}
 
-  showScreen('admin-screen');
+async function renderAllUsers() {
+  const container = document.getElementById('admin-content');
+  container.innerHTML = '<div class="empty-state">Loading users...</div>';
+
+  const { data: users, error } = await sb
+    .from('profiles')
+    .select('*, restaurants(name)')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="empty-state">Could not load users.</div>';
+    return;
+  }
+
+  if (!users || !users.length) {
+    container.innerHTML = '<div class="empty-state">No users yet.</div>';
+    return;
+  }
+
+  const customerCount = users.filter(u => u.role === 'customer').length;
+  const ownerCount = users.filter(u => u.role === 'restaurant_owner').length;
+
+  const statsHtml = `
+    <div class="stats-row" style="padding-top:14px;">
+      <div class="stat-card">
+        <div class="stat-label">Total users</div>
+        <div class="stat-val">${users.length}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Customers · Owners</div>
+        <div class="stat-val" style="font-size:18px;">${customerCount} · ${ownerCount}</div>
+      </div>
+    </div>
+  `;
+
+  const usersHtml = users.map(u => {
+    const roleIcon = u.role === 'restaurant_owner' ? '🍴' : '🧑';
+    const roleLabel = u.role === 'restaurant_owner' ? 'Owner' : 'Customer';
+    const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : '';
+    let statusBadge = '';
+    if (u.role === 'restaurant_owner') {
+      if (u.approval_status === 'approved') statusBadge = '<span class="status-pill confirmed">Approved</span>';
+      else if (u.approval_status === 'pending') statusBadge = '<span class="status-pill" style="background:#FAEEDA; color:#BA7517;">Pending</span>';
+      else if (u.approval_status === 'rejected') statusBadge = '<span class="status-pill cancelled">Rejected</span>';
+    }
+
+    return `
+      <div class="booking-card">
+        <div class="booking-top">
+          <div>
+            <div class="booking-name">${roleIcon} ${escapeHtml(u.full_name || 'No name')}</div>
+            <div class="booking-detail">${roleLabel}${u.restaurants?.name ? ' · ' + escapeHtml(u.restaurants.name) : ''}</div>
+            ${statusBadge ? '<div style="margin-top:6px;">' + statusBadge + '</div>' : ''}
+          </div>
+          <div>
+            <div class="booking-date-sub">${joinDate}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = statsHtml + usersHtml;
 }
 
 async function approveOwner(userId) {
@@ -1188,7 +1270,7 @@ async function approveOwner(userId) {
     return;
   }
   showToast('Owner approved!');
-  await loadAdminDashboard();
+  renderPendingOwners();
 }
 
 async function rejectOwner(userId) {
@@ -1198,7 +1280,7 @@ async function rejectOwner(userId) {
     return;
   }
   showToast('Owner rejected');
-  await loadAdminDashboard();
+  renderPendingOwners();
 }
 
 // ===== OWNER DASHBOARD =====
