@@ -71,6 +71,8 @@
   .time-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 18px 4px; }
   .time-btn { background: #fff; border: 0.5px solid #E0DDD8; border-radius: 12px; padding: 10px; font-size: 13px; color: #444441; cursor: pointer; text-align: center; }
   .time-btn.selected { background: #2C2C2A; color: #F7F5F2; border-color: #2C2C2A; }
+  .guest-btn { flex: 1; background: #fff; border: 0.5px solid #E0DDD8; border-radius: 12px; padding: 10px; font-size: 13px; color: #444441; cursor: pointer; text-align: center; }
+  .guest-btn.selected { background: #2C2C2A; color: #F7F5F2; border-color: #2C2C2A; }
   .legend { display: flex; gap: 14px; padding: 14px 18px 6px; }
   .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #9A9590; }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
@@ -181,6 +183,11 @@
     <div id="name-field" style="display:none;">
       <div class="field-label">Full name</div>
       <input class="field-input" id="signup-name" placeholder="Ahmed Karimi">
+    </div>
+
+    <div id="phone-field" style="display:none;">
+      <div class="field-label">Phone number</div>
+      <input class="field-input" id="signup-phone" type="tel" placeholder="0750 123 4567">
     </div>
 
     <div id="restaurant-field" style="display:none;">
@@ -307,6 +314,15 @@
       <div style="padding:0 18px 4px;">
         <input type="time" id="booking-time" class="field-input" style="margin-bottom:0;" onchange="selectTimeFromPicker()">
       </div>
+      <div class="sub-label">How many guests? | عدد الضيوف</div>
+      <div style="display:flex; gap:8px; padding:0 18px 4px;">
+        <div class="guest-btn" onclick="selectGuests(this, 1)">1</div>
+        <div class="guest-btn" onclick="selectGuests(this, 2)">2</div>
+        <div class="guest-btn" onclick="selectGuests(this, 3)">3</div>
+        <div class="guest-btn" onclick="selectGuests(this, 4)">4</div>
+        <div class="guest-btn" onclick="selectGuests(this, 5)">5</div>
+        <div class="guest-btn" onclick="selectGuests(this, 6)">6+</div>
+      </div>
       <div class="sub-label">Choose a table | اختر الطاولة</div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#C0DD97;"></div>Free</div>
@@ -393,7 +409,10 @@
       </div>
     </div>
     <div class="owner-tabs">
-      <div class="owner-tab active" id="tab-bookings" onclick="switchOwnerTab('bookings')">Bookings</div>
+      <div class="owner-tab active" id="tab-bookings" onclick="switchOwnerTab('bookings')" style="position:relative;">
+        Bookings
+        <span id="owner-booking-badge" style="display:none; position:absolute; top:-6px; right:-6px; background:#E5484D; color:#fff; font-size:9px; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
+      </div>
       <div class="owner-tab" id="tab-info" onclick="switchOwnerTab('info')">Restaurant info</div>
       <div class="owner-tab" id="tab-stats" onclick="switchOwnerTab('stats')">Analytics</div>
     </div>
@@ -421,6 +440,7 @@ let selectedTableId = null;
 let selectedTableNumber = null;
 let selectedTime = null;
 let selectedDate = null;
+let selectedGuests = 2;
 
 // ===== INIT =====
 async function init() {
@@ -470,6 +490,7 @@ function goToSignIn() {
   document.getElementById('auth-title').textContent = 'Welcome back';
   document.getElementById('auth-sub').textContent = 'Sign in to book a table';
   document.getElementById('name-field').style.display = 'none';
+  document.getElementById('phone-field').style.display = 'none';
   document.getElementById('restaurant-field').style.display = 'none';
   document.getElementById('auth-submit-btn').textContent = 'Sign in';
   document.getElementById('auth-switch-text').innerHTML = "Don't have an account? <span onclick=\"goToSignupRole()\">Sign up</span>";
@@ -483,6 +504,7 @@ async function selectSignupRole(role) {
   document.getElementById('auth-title').textContent = role === 'customer' ? 'Create account' : 'Restaurant owner signup';
   document.getElementById('auth-sub').textContent = role === 'customer' ? 'Sign up to start booking' : 'Set up your restaurant account';
   document.getElementById('name-field').style.display = 'block';
+  document.getElementById('phone-field').style.display = 'block';
   document.getElementById('restaurant-field').style.display = role === 'restaurant_owner' ? 'block' : 'none';
   document.getElementById('auth-submit-btn').textContent = 'Sign up';
   document.getElementById('auth-switch-text').innerHTML = 'Already have an account? <span onclick="goToSignIn()">Sign in</span>';
@@ -559,6 +581,7 @@ async function handleAuth() {
           await sb.from('profiles').insert({
             id: data.user.id,
             full_name: name,
+            phone: document.getElementById('signup-phone').value.trim() || null,
             role: 'restaurant_owner',
             restaurant_id: restaurantId,
             approval_status: 'pending'
@@ -580,6 +603,7 @@ async function handleAuth() {
           await sb.from('profiles').insert({
             id: data.user.id,
             full_name: name,
+            phone: document.getElementById('signup-phone').value.trim() || null,
             role: 'customer',
             approval_status: 'approved'
           });
@@ -738,6 +762,8 @@ async function openDetail(restaurantId) {
 
   selectedTableId = null; selectedTime = null;
   document.getElementById('booking-time').value = '';
+  selectedGuests = 2;
+  document.querySelectorAll('.guest-btn').forEach((b, i) => b.classList.toggle('selected', i === 1));
   document.getElementById('book-btn').disabled = true;
   document.getElementById('book-btn').textContent = 'Select a table to reserve';
 
@@ -843,6 +869,12 @@ function selectTable(id, number) {
   updateBookBtn();
 }
 
+function selectGuests(el, count) {
+  selectedGuests = count;
+  document.querySelectorAll('.guest-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
 function selectTimeFromPicker() {
   const timeValue = document.getElementById('booking-time').value;
   if (!timeValue) {
@@ -880,7 +912,7 @@ let paymentMethod = 'cash';
 
 function goToPayment() {
   document.getElementById('p-rest').textContent = currentRestaurant.name;
-  document.getElementById('p-table').textContent = `${selectedTableNumber} · 2 guests`;
+  document.getElementById('p-table').textContent = `${selectedTableNumber} · ${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
   document.getElementById('p-time').textContent = `${selectedTime} · ${selectedDate}`;
   document.getElementById('p-meta').textContent = `${currentRestaurant.name} · ${selectedTableNumber} · ${selectedTime}`;
   showScreen('payment-screen');
@@ -902,7 +934,7 @@ async function confirmBooking() {
       restaurant_id: currentRestaurant.id,
       reservation_date: selectedDate,
       reservation_time: selectedTime,
-      guest_count: 2,
+      guest_count: selectedGuests,
       payment_method: 'cash',
       payment_status: 'pending',
       status: 'confirmed'
@@ -1250,6 +1282,7 @@ async function renderAllUsers() {
           <div>
             <div class="booking-name">${roleIcon} ${escapeHtml(u.full_name || 'No name')}</div>
             <div class="booking-detail">${roleLabel}${u.restaurants?.name ? ' · ' + escapeHtml(u.restaurants.name) : ''}</div>
+            ${u.phone ? '<div class="booking-detail">📞 ' + escapeHtml(u.phone) + '</div>' : ''}
             ${statusBadge ? '<div style="margin-top:6px;">' + statusBadge + '</div>' : ''}
           </div>
           <div>
@@ -1312,7 +1345,7 @@ async function loadOwnerDashboard(profile) {
 async function refreshOwnerBookings() {
   const { data, error } = await sb
     .from('reservations')
-    .select('*, profiles(full_name), restaurant_tables(table_number)')
+    .select('*, profiles(full_name, phone), restaurant_tables(table_number)')
     .eq('restaurant_id', ownerRestaurant.id)
     .order('reservation_date', { ascending: false })
     .order('reservation_time', { ascending: true });
@@ -1327,6 +1360,17 @@ async function refreshOwnerBookings() {
   const today = new Date().toISOString().split('T')[0];
   const todayBookings = ownerBookings.filter(b => b.reservation_date === today && b.status !== 'cancelled');
   document.getElementById('owner-today-count').textContent = todayBookings.length;
+
+  // Update the red badge on the Bookings tab
+  const badge = document.getElementById('owner-booking-badge');
+  if (badge) {
+    if (todayBookings.length > 0) {
+      badge.textContent = todayBookings.length;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 
   const paidBookings = ownerBookings.filter(b => b.payment_status === 'paid' || b.status === 'confirmed');
   const revenue = paidBookings.length * 1000;
@@ -1353,6 +1397,7 @@ function renderOwnerBookings() {
 
   container.innerHTML = ownerBookings.map(b => {
     const customerName = b.profiles?.full_name || 'Customer';
+    const customerPhone = b.profiles?.phone || '';
     const tableNum = b.restaurant_tables?.table_number || '—';
     const isCancelled = b.status === 'cancelled';
     const isPending = b.status === 'pending';
@@ -1362,6 +1407,7 @@ function renderOwnerBookings() {
         <div class="booking-top">
           <div>
             <div class="booking-name">${escapeHtml(customerName)}</div>
+            ${customerPhone ? '<div class="booking-detail">📞 ' + escapeHtml(customerPhone) + '</div>' : ''}
             <div class="booking-detail">${b.guest_count || 2} guests · Table ${escapeHtml(tableNum)}</div>
             <div class="booking-detail">${b.payment_method === 'online' ? '💳 Paid online' : '💵 Pay at door'}</div>
           </div>
