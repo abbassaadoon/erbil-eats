@@ -300,11 +300,8 @@
         <input type="date" id="booking-date" class="field-input" style="margin-bottom:0;">
       </div>
       <div class="sub-label">Pick a time | اختر الوقت</div>
-      <div class="time-slots" id="time-slots">
-        <div class="time-btn" onclick="selectTime(this,'7:00 PM')">7:00 PM</div>
-        <div class="time-btn" onclick="selectTime(this,'7:30 PM')">7:30 PM</div>
-        <div class="time-btn" onclick="selectTime(this,'8:00 PM')">8:00 PM</div>
-        <div class="time-btn" onclick="selectTime(this,'8:30 PM')">8:30 PM</div>
+      <div style="padding:0 18px 4px;">
+        <input type="time" id="booking-time" class="field-input" style="margin-bottom:0;" onchange="selectTimeFromPicker()">
       </div>
       <div class="sub-label">Choose a table | اختر الطاولة</div>
       <div class="legend">
@@ -562,6 +559,9 @@ async function handleAuth() {
             restaurant_id: restaurantId,
             approval_status: 'pending'
           });
+          // Get restaurant name for the email
+          const selectedRestName = document.getElementById('signup-restaurant').selectedOptions[0]?.textContent || '';
+          notifyAdminOfSignup(name, email, 'restaurant_owner', selectedRestName);
           currentUser = data.user;
           showToast('Account created! Awaiting owner approval. Please check back soon.');
           showScreen('auth-screen');
@@ -579,6 +579,7 @@ async function handleAuth() {
             role: 'customer',
             approval_status: 'approved'
           });
+          notifyAdminOfSignup(name, email, 'customer', '');
           currentUser = data.user;
           await loadHome();
         }
@@ -641,6 +642,7 @@ async function loadHome() {
       return;
     }
     profile = newProfile;
+    notifyAdminOfSignup(fullName, currentUser.email, 'customer', '');
   }
 
   currentProfile = profile;
@@ -731,7 +733,7 @@ async function openDetail(restaurantId) {
   if (!currentRestaurant) return;
 
   selectedTableId = null; selectedTime = null;
-  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('booking-time').value = '';
   document.getElementById('book-btn').disabled = true;
   document.getElementById('book-btn').textContent = 'Select a table to reserve';
 
@@ -837,10 +839,19 @@ function selectTable(id, number) {
   updateBookBtn();
 }
 
-function selectTime(el, t) {
-  selectedTime = t;
-  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
+function selectTimeFromPicker() {
+  const timeValue = document.getElementById('booking-time').value;
+  if (!timeValue) {
+    selectedTime = null;
+    updateBookBtn();
+    return;
+  }
+  // Convert 24-hour (e.g. "19:30") to 12-hour (e.g. "7:30 PM")
+  const [hours, minutes] = timeValue.split(':');
+  const h = parseInt(hours);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  selectedTime = `${h12}:${minutes} ${ampm}`;
   selectedTableId = null;
   loadTables();
   updateBookBtn();
@@ -911,6 +922,36 @@ async function confirmBooking() {
     showToast('Booking failed: ' + err.message);
     btn.disabled = false;
     btn.textContent = 'Reserve & pay at door';
+  }
+}
+
+async function notifyAdminOfSignup(name, email, role, restaurantName) {
+  try {
+    const ADMIN_EMAIL = 'abbassaadoon7@gmail.com';  // Your email
+    const roleLabel = role === 'restaurant_owner' ? '🍴 Restaurant Owner' : '🧑 Customer';
+    const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #F7F5F2;">
+        <h2 style="color: #2C2C2A;">👤 New Signup on Erbil Eats!</h2>
+        <div style="background: #fff; border-radius: 12px; padding: 16px; margin: 16px 0;">
+          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Name:</strong> ${name}</p>
+          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Email:</strong> ${email}</p>
+          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Type:</strong> ${roleLabel}</p>
+          ${restaurantName ? `<p style="margin: 6px 0; color: #2C2C2A;"><strong>Restaurant:</strong> ${restaurantName}</p>` : ''}
+          <p style="margin: 6px 0; color: #9A9590; font-size: 12px;">${new Date().toLocaleString()}</p>
+        </div>
+        ${role === 'restaurant_owner' ? '<p style="color: #BA7517; font-size: 13px;">⚠️ This owner needs your approval in the admin panel.</p>' : ''}
+        <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
+      </div>
+    `;
+    await sb.functions.invoke('send-email', {
+      body: {
+        to: ADMIN_EMAIL,
+        subject: `New ${role === 'restaurant_owner' ? 'owner' : 'customer'} signup: ${name}`,
+        html: html
+      }
+    });
+  } catch (err) {
+    console.log('Admin notification failed (non-critical):', err);
   }
 }
 
