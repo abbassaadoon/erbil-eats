@@ -306,6 +306,13 @@
       <div class="map-area" id="detail-map" style="height:200px; border-radius:16px; margin:14px 18px; overflow:hidden;">
         <div style="display:flex; align-items:center; justify-content:center; height:100%; background:#E8F0E4; color:#3B6D11; font-size:13px;">Loading map...</div>
       </div>
+      <div id="tour-section" style="display:none;">
+        <div class="sub-label">360° View | جولة افتراضية</div>
+        <div style="margin:0 18px 4px; border-radius:16px; overflow:hidden; border:0.5px solid #E0DDD8;">
+          <iframe id="tour-frame" style="width:100%; height:240px; border:none; display:block;" allowfullscreen></iframe>
+        </div>
+        <div style="padding:2px 18px 8px; font-size:11px; color:#B4B2A9;">Drag to look around · اسحب للنظر حولك</div>
+      </div>
       <div class="sub-label">Pick a date | اختر التاريخ</div>
       <div style="padding:0 18px 4px;">
         <input type="date" id="booking-date" class="field-input" style="margin-bottom:0;">
@@ -775,6 +782,17 @@ async function openDetail(restaurantId) {
   selectedDate = today;
 
   showScreen('detail-screen');
+
+  // Load 360 tour if available
+  const tourSection = document.getElementById('tour-section');
+  const tourFrame = document.getElementById('tour-frame');
+  if (currentRestaurant.tour_url && currentRestaurant.tour_url.trim()) {
+    tourFrame.src = currentRestaurant.tour_url;
+    tourSection.style.display = 'block';
+  } else {
+    tourFrame.src = '';
+    tourSection.style.display = 'none';
+  }
 
   // Load map
   setTimeout(() => {
@@ -1458,6 +1476,10 @@ function renderOwnerInfo() {
       <input id="info-address" value="${escapeHtml(ownerRestaurant.address || '')}">
     </div>
     <div class="info-field">
+      <label>360° Tour link (paste from Kuula/CloudPano)</label>
+      <input id="info-tour" value="${escapeHtml(ownerRestaurant.tour_url || '')}" placeholder="https://kuula.co/share/...">
+    </div>
+    <div class="info-field">
       <label>Active (visible to customers)</label>
       <input id="info-active" type="checkbox" ${ownerRestaurant.is_active ? 'checked' : ''} style="width:auto;">
     </div>
@@ -1469,6 +1491,7 @@ async function saveOwnerInfo() {
   const name = document.getElementById('info-name').value.trim();
   const cuisine = document.getElementById('info-cuisine').value.trim();
   const address = document.getElementById('info-address').value.trim();
+  const tourUrl = document.getElementById('info-tour').value.trim();
   const isActive = document.getElementById('info-active').checked;
 
   if (!name) {
@@ -1477,7 +1500,7 @@ async function saveOwnerInfo() {
   }
 
   const { error } = await sb.from('restaurants').update({
-    name, cuisine, address, is_active: isActive
+    name, cuisine, address, tour_url: tourUrl, is_active: isActive
   }).eq('id', ownerRestaurant.id);
 
   if (error) {
@@ -1488,6 +1511,7 @@ async function saveOwnerInfo() {
   ownerRestaurant.name = name;
   ownerRestaurant.cuisine = cuisine;
   ownerRestaurant.address = address;
+  ownerRestaurant.tour_url = tourUrl;
   ownerRestaurant.is_active = isActive;
   document.getElementById('owner-rest-name').textContent = name;
   showToast('Restaurant info saved');
