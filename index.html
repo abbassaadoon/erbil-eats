@@ -9,8 +9,42 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  body { background: #F7F5F2; min-height: 100vh; }
-  .app { max-width: 420px; margin: 0 auto; min-height: 100vh; background: #F7F5F2; display: flex; flex-direction: column; position: relative; }
+  body { background: #F7F5F2; min-height: 100vh; transition: background 0.3s; }
+  .app { max-width: 420px; margin: 0 auto; min-height: 100vh; background: #F7F5F2; display: flex; flex-direction: column; position: relative; transition: background 0.3s; }
+
+  /* ===== DARK MODE (warm cozy) ===== */
+  body.dark { background: #1C1A18; }
+  body.dark .app { background: #1C1A18; }
+  body.dark .loading-text, body.dark .greeting, body.dark .rest-tag, body.dark .booking-detail,
+  body.dark .map-coord, body.dark .auth-sub, body.dark .sub-label, body.dark .stat-label,
+  body.dark .method-sub, body.dark .success-sub, body.dark .booking-date-sub { color: #A8A29C; }
+  body.dark .app-title, body.dark .rest-name, body.dark .rest-detail-name, body.dark .auth-title,
+  body.dark .field-label, body.dark .booking-name, body.dark .stat-val, body.dark .method-title,
+  body.dark .success-title, body.dark .owner-section-title, body.dark .conf-row span:last-child,
+  body.dark .summary-row span:last-child, body.dark .total-row, body.dark .booking-time { color: #F0EBE5; }
+  body.dark .rest-card, body.dark .booking-card, body.dark .stat-card, body.dark .info-field,
+  body.dark .summary-card, body.dark .method-card, body.dark .conf-card, body.dark .search-bar,
+  body.dark .field-input, body.dark .owner-tab, body.dark .avatar-btn {
+    background: #2A2724; border-color: #3D3833; }
+  body.dark .field-input { color: #F0EBE5; }
+  body.dark .field-input::placeholder { color: #7A746E; }
+  body.dark .bottom-panel { background: #2A2724; border-color: #3D3833; }
+  body.dark .rest-img { filter: brightness(0.85); }
+  body.dark .auth-btn, body.dark .confirm-btn, body.dark .btn-accept, body.dark .save-info-btn,
+  body.dark .owner-tab.active { background: #E8DFD5; color: #2A2724; }
+  body.dark .auth-btn:disabled, body.dark .confirm-btn:disabled { background: #3D3833; color: #6B655F; }
+  body.dark .back-btn, body.dark .done-btn, body.dark .btn-decline { background: #2A2724; color: #A8A29C; border-color: #3D3833; }
+  body.dark .search-bar input { color: #F0EBE5; }
+  body.dark .rest-rating { color: #D4A24E; }
+  body.dark .section-label { color: #7A746E; }
+  body.dark .empty-state { color: #A8A29C; }
+  body.dark .time-btn, body.dark .guest-btn { background: #2A2724; color: #C9C2BB; border-color: #3D3833; }
+  body.dark .time-btn.selected, body.dark .guest-btn.selected { background: #E8DFD5; color: #2A2724; border-color: #E8DFD5; }
+  body.dark .table-cell.free { background: #21301A; color: #9BC47A; border-color: #3A5229; }
+  body.dark .table-cell.selected { background: #E8DFD5; color: #2A2724; border-color: #E8DFD5; }
+  body.dark .auth-switch span { color: #E8DFD5; }
+  .theme-toggle { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 0.5px solid #E0DDD8; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+  body.dark .theme-toggle { background: #2A2724; border-color: #3D3833; }
 
   /* ===== LOADING ===== */
   .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 12px; }
@@ -253,6 +287,7 @@
           <div class="app-subtitle">أكلات أربيل</div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
+          <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
           <div class="avatar-btn" onclick="openNotifications()" title="Notifications" style="position:relative;">
             🔔
             <span id="notif-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:#E5484D; color:#fff; font-size:9px; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 4px;">0</span>
@@ -453,6 +488,9 @@ let selectedGuests = 2;
 async function init() {
   document.getElementById('booking-date').min = new Date().toISOString().split('T')[0];
 
+  // Load saved theme preference
+  loadTheme();
+
   // Handle OAuth redirect (Google sign-in returns here)
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
@@ -469,6 +507,24 @@ async function init() {
       loadHome();
     }
   });
+}
+
+// ===== DARK MODE =====
+function loadTheme() {
+  let saved = 'light';
+  try { saved = localStorage.getItem('erbil-theme') || 'light'; } catch (e) {}
+  if (saved === 'dark') {
+    document.body.classList.add('dark');
+    const toggle = document.getElementById('theme-toggle');
+    if (toggle) toggle.textContent = '☀️';
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark');
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) toggle.textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('erbil-theme', isDark ? 'dark' : 'light'); } catch (e) {}
 }
 
 function showToast(msg) {
