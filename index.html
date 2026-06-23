@@ -272,6 +272,26 @@
   .save-info-btn { background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 8px 18px; width: calc(100% - 36px); }
 
   .explore-btn { display: block; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 14px 18px; width: calc(100% - 36px); text-align: center; }
+
+  /* ===== HOME DASHBOARD: UPCOMING BOOKING ===== */
+  .upcoming-card { margin: 6px 18px 4px; border-radius: 18px; padding: 15px 16px; background: var(--card); border: 0.5px solid var(--border); cursor: pointer; display: flex; align-items: center; gap: 14px; }
+  body.dark .upcoming-card { border-color: var(--accent); }
+  .uc-emoji { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 25px; flex-shrink: 0; }
+  .uc-label { font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .uc-name { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; color: var(--serif); line-height: 1.1; }
+  .uc-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .uc-chev { margin-left: auto; color: var(--faint); font-size: 18px; }
+  .uc-none { margin: 6px 18px 4px; border-radius: 16px; padding: 16px; background: var(--card); border: 0.5px dashed var(--border-2); cursor: pointer; text-align: center; color: var(--muted); font-size: 13px; }
+
+  /* ===== FRIENDS ===== */
+  .friend-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; margin: 0 18px 10px; }
+  .friend-av { width: 42px; height: 42px; border-radius: 50%; background: var(--btn-bg); color: var(--btn-text); display: flex; align-items: center; justify-content: center; font-weight: 600; font-family: 'Cormorant Garamond', serif; font-size: 19px; flex-shrink: 0; }
+  .friend-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .friend-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .friend-add { margin-left: auto; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+  .friend-add.added { background: var(--good-bg); color: var(--good-text); }
+  .friend-action { margin-left: auto; display: flex; gap: 6px; }
+  .mini-btn { background: var(--card); border: 0.5px solid var(--border-2); color: var(--text); border-radius: 10px; padding: 8px 11px; font-size: 11px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -386,13 +406,9 @@
           <div class="avatar-btn" id="avatar-initial" onclick="navTo('profile')" title="Profile">A</div>
         </div>
       </div>
-      <div class="search-bar">
-        <span>🔍</span>
-        <input id="search-input" placeholder="Find a restaurant..." oninput="filterRestaurants()">
-      </div>
     </div>
     <div class="content">
-      <div class="chips" id="home-chips"></div>
+      <div id="home-upcoming"></div>
       <div class="section-label">Featured in Erbil · الأبرز</div>
       <div class="featured-row" id="featured-row"></div>
       <div class="ad-slot" onclick="comingSoon('Advertising')">
@@ -400,8 +416,9 @@
         <div class="ad-title">Promote your restaurant here</div>
         <div class="ad-sub">Reach diners across Erbil · أعلن معنا</div>
       </div>
-      <div class="section-label">All restaurants · كل المطاعم</div>
-      <div class="rest-grid" id="restaurant-list"></div>
+      <div class="section-label">Browse by category · التصنيفات</div>
+      <div class="chips" id="home-chips"></div>
+      <button class="explore-btn" onclick="navTo('search')">🔍 Search all restaurants</button>
     </div>
   </div>
 
@@ -470,6 +487,41 @@
       </div>
     </div>
     <div class="content" id="profile-content"></div>
+  </div>
+
+  <!-- FRIENDS -->
+  <div id="friends-screen" class="detail-screen">
+    <div class="detail-header">
+      <button class="back-btn" onclick="navTo('profile')">← Profile</button>
+      <div class="rest-detail-name" style="font-size:24px; margin-top:10px;">Friends · الأصدقاء</div>
+      <div class="rest-detail-meta">Find people and see where they love to eat</div>
+    </div>
+    <div class="content" style="padding-bottom:20px;">
+      <div style="padding:6px 18px 0;">
+        <div class="search-bar" style="margin-top:0;">
+          <span>🔍</span>
+          <input id="friend-search" placeholder="Search people by name..." oninput="searchFriends()">
+        </div>
+      </div>
+      <div id="friend-results"></div>
+      <div class="section-label">My friends · أصدقائي</div>
+      <div id="friends-list"></div>
+    </div>
+  </div>
+
+  <!-- FRIEND DETAIL -->
+  <div id="friend-detail-screen" class="detail-screen">
+    <div class="detail-header">
+      <button class="back-btn" onclick="openFriends()">← Friends</button>
+      <div class="rest-detail-name" id="fd-name" style="font-size:24px; margin-top:10px;"></div>
+      <div class="rest-detail-meta" id="fd-sub"></div>
+    </div>
+    <div class="content" style="padding-bottom:20px;">
+      <div class="section-label">Saved places · محفوظاتهم</div>
+      <div class="rest-grid" id="fd-saved"></div>
+      <div class="section-label">Reviews · المراجعات</div>
+      <div id="fd-reviews"></div>
+    </div>
   </div>
 
   <!-- DETAIL -->
@@ -646,8 +698,12 @@ let lastMain = 'home';
 let favSet = new Set();
 let allFavs = [];      // [{restaurant_id, list_id}]
 let favLists = [];     // [{id, name, ...}]
-let activeCategory = 'All';
 let activeSearchCategory = 'All';
+
+// friends state
+let friendIdSet = new Set();
+let nameById = {};
+let friendSearchTimer = null;
 
 const MAIN_SCREENS = ['home','search','bookings','saved','profile'];
 const SCREEN_IDS = {
@@ -706,7 +762,7 @@ function comingSoon(label) {
   showToast((label ? label + ': ' : '') + 'coming soon 🚧');
 }
 
-const ALL_SCREENS = ['loading-screen','auth-screen','signup-role-screen','home-screen','search-screen','bookings-screen','saved-screen','profile-screen','detail-screen','payment-screen','success-screen','owner-screen','admin-screen'];
+const ALL_SCREENS = ['loading-screen','auth-screen','signup-role-screen','home-screen','search-screen','bookings-screen','saved-screen','profile-screen','friends-screen','friend-detail-screen','detail-screen','payment-screen','success-screen','owner-screen','admin-screen'];
 
 function showScreen(id) {
   ALL_SCREENS.forEach(s => { const el = document.getElementById(s); if (el) el.style.display = 'none'; });
@@ -966,11 +1022,48 @@ async function loadHome() {
 
   await loadFavData();
 
-  renderChips('home-chips', activeCategory, setHomeCategory);
+  renderChips('home-chips', '', 'jumpToCategory');
   renderFeatured();
-  applyHomeFilters();
+  await renderHomeUpcoming();
   showScreen('home-screen');
   updateNotificationBadge();
+}
+
+// Home dashboard: show the user's next upcoming reservation
+async function renderHomeUpcoming() {
+  const el = document.getElementById('home-upcoming');
+  const today = new Date().toISOString().split('T')[0];
+  const { data } = await sb
+    .from('reservations')
+    .select('*, restaurants(name, image_emoji, bg_color), restaurant_tables(table_number)')
+    .eq('user_id', currentUser.id).eq('status', 'confirmed').gte('reservation_date', today)
+    .order('reservation_date', { ascending: true }).order('reservation_time', { ascending: true }).limit(1);
+
+  if (data && data.length) {
+    const b = data[0];
+    const name = b.restaurants?.name || 'Restaurant';
+    const emoji = b.restaurants?.image_emoji || '🍴';
+    const bg = b.restaurants?.bg_color || 'var(--card)';
+    const table = b.restaurant_tables?.table_number || '—';
+    el.innerHTML = `
+      <div class="upcoming-card" onclick="navTo('bookings')">
+        <div class="uc-emoji" style="background:${bg};">${emoji}</div>
+        <div>
+          <div class="uc-label">Your upcoming booking</div>
+          <div class="uc-name">${escapeHtml(name)}</div>
+          <div class="uc-meta">${escapeHtml(b.reservation_date)} · ${escapeHtml(b.reservation_time)} · Table ${escapeHtml(table)}</div>
+        </div>
+        <div class="uc-chev">›</div>
+      </div>`;
+  } else {
+    el.innerHTML = `<div class="uc-none" onclick="navTo('search')">No upcoming bookings — explore restaurants ›</div>`;
+  }
+}
+
+// Home category chip → jump to Search pre-filtered
+function jumpToCategory(cat) {
+  activeSearchCategory = cat;
+  navTo('search');
 }
 
 // ----- category chips -----
@@ -995,23 +1088,6 @@ function renderChips(containerId, active, onClickName) {
     `<div class="chip ${cat === active ? 'active' : ''}" onclick="${onClickName}('${cat}')">${cat}</div>`
   ).join('');
 }
-
-function setHomeCategory(cat) {
-  activeCategory = cat;
-  renderChips('home-chips', activeCategory, 'setHomeCategory');
-  applyHomeFilters();
-}
-
-function applyHomeFilters() {
-  const q = (document.getElementById('search-input').value || '').toLowerCase();
-  const list = restaurants.filter(r =>
-    matchCategory(r, activeCategory) &&
-    (r.name.toLowerCase().includes(q) || (r.cuisine || '').toLowerCase().includes(q))
-  );
-  renderGrid('restaurant-list', list);
-}
-
-function filterRestaurants() { applyHomeFilters(); }
 
 function renderFeatured() {
   const top = [...restaurants].sort((a,b) => (b.rating||0) - (a.rating||0)).slice(0, 8);
@@ -1268,7 +1344,7 @@ function renderProfile() {
       <div class="prof-group-title">About you</div>
       <div class="prof-list">
         <div class="prof-row" onclick="comingSoon('Personal details')"><span class="pr-ic">👤</span><span class="pr-label">Personal details</span><span class="pr-chev">›</span></div>
-        <div class="prof-row" onclick="comingSoon('Manage followers')"><span class="pr-ic">👥</span><span class="pr-label">Manage followers</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="openFriends()"><span class="pr-ic">👥</span><span class="pr-label">Friends</span><span class="pr-chev">›</span></div>
         <div class="prof-row" onclick="toggleTheme()"><span class="pr-ic">🌙</span><span class="pr-label">Dark mode</span><div class="switch ${isDark ? 'on' : ''}" id="dark-switch"></div></div>
       </div>
     </div>
@@ -1306,6 +1382,105 @@ function referFriend() {
 }
 function getSupport() {
   showToast('Email us: ' + ADMIN_EMAIL);
+}
+
+// ===== FRIENDS =====
+function openFriends() {
+  document.getElementById('friend-search').value = '';
+  document.getElementById('friend-results').innerHTML = '';
+  showScreen('friends-screen');
+  loadMyFriends();
+}
+
+async function loadMyFriends() {
+  const list = document.getElementById('friends-list');
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
+  const { data } = await sb.from('friendships').select('*').eq('user_id', currentUser.id);
+  const rows = data || [];
+  friendIdSet = new Set(rows.map(r => r.friend_id));
+  if (!rows.length) {
+    list.innerHTML = '<div class="empty-state">No friends yet.<br>Search above to find people.</div>';
+    return;
+  }
+  const { data: profs } = await sb.from('profiles').select('id, full_name, role').in('id', rows.map(r => r.friend_id));
+  const pmap = {};
+  (profs || []).forEach(p => { pmap[p.id] = p; nameById[p.id] = p.full_name || 'Erbil Eats user'; });
+  list.innerHTML = rows.map(f => {
+    const p = pmap[f.friend_id];
+    const name = p?.full_name || 'Erbil Eats user';
+    const sub = f.status === 'pending' ? 'Request sent' : (p?.role === 'restaurant_owner' ? 'Restaurant owner' : 'Friend');
+    return `
+      <div class="friend-row">
+        <div class="friend-av">${escapeHtml(name.charAt(0).toUpperCase())}</div>
+        <div><div class="friend-name">${escapeHtml(name)}</div><div class="friend-sub">${sub}</div></div>
+        <div class="friend-action">
+          <button class="mini-btn" onclick="viewFriend('${f.friend_id}')">View</button>
+          <button class="mini-btn" onclick="removeFriend('${f.friend_id}')">Remove</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function searchFriends() {
+  clearTimeout(friendSearchTimer);
+  friendSearchTimer = setTimeout(doSearchFriends, 300);
+}
+
+async function doSearchFriends() {
+  const q = document.getElementById('friend-search').value.trim();
+  const box = document.getElementById('friend-results');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  const { data } = await sb.from('profiles').select('id, full_name, role').ilike('full_name', '%' + q + '%').limit(15);
+  const results = (data || []).filter(p => p.id !== currentUser.id);
+  if (!results.length) { box.innerHTML = '<div class="empty-state" style="padding:24px;">No people found.</div>'; return; }
+  box.innerHTML = '<div class="section-label">Search results</div>' + results.map(p => {
+    const name = p.full_name || 'Erbil Eats user';
+    nameById[p.id] = name;
+    const already = friendIdSet.has(p.id);
+    return `
+      <div class="friend-row">
+        <div class="friend-av">${escapeHtml(name.charAt(0).toUpperCase())}</div>
+        <div><div class="friend-name">${escapeHtml(name)}</div><div class="friend-sub">${p.role === 'restaurant_owner' ? 'Restaurant owner' : 'Diner'}</div></div>
+        <button class="friend-add ${already ? 'added' : ''}" ${already ? 'disabled' : ''} onclick="addFriend('${p.id}')">${already ? '✓ Friend' : '＋ Add'}</button>
+      </div>`;
+  }).join('');
+}
+
+async function addFriend(friendId) {
+  if (friendIdSet.has(friendId)) return;
+  const { error } = await sb.from('friendships').insert({ user_id: currentUser.id, friend_id: friendId, status: 'accepted' });
+  if (error) { showToast('Could not add friend: ' + error.message); return; }
+  friendIdSet.add(friendId);
+  showToast('Friend added 🤝');
+  doSearchFriends();
+  loadMyFriends();
+}
+
+async function removeFriend(friendId) {
+  if (!confirm('Remove this friend?')) return;
+  const { error } = await sb.from('friendships').delete().eq('user_id', currentUser.id).eq('friend_id', friendId);
+  if (error) { showToast('Could not remove: ' + error.message); return; }
+  friendIdSet.delete(friendId);
+  showToast('Friend removed');
+  loadMyFriends();
+}
+
+async function viewFriend(friendId) {
+  const name = nameById[friendId] || 'Friend';
+  document.getElementById('fd-name').textContent = name;
+  document.getElementById('fd-sub').textContent = 'What they love in Erbil';
+  document.getElementById('fd-reviews').innerHTML = '<div class="empty-state" style="padding:24px;">Reviews coming soon 🚧</div>';
+  const saved = document.getElementById('fd-saved');
+  saved.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Loading...</div>';
+  showScreen('friend-detail-screen');
+  const { data } = await sb.from('favourites').select('restaurant_id').eq('user_id', friendId);
+  const ids = new Set((data || []).map(f => f.restaurant_id));
+  const rests = restaurants.filter(r => ids.has(r.id));
+  if (!rests.length) {
+    saved.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No saved places yet.</div>';
+    return;
+  }
+  renderGrid('fd-saved', rests);
 }
 
 // ===== DETAIL / TABLES =====
