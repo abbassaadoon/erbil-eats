@@ -7,181 +7,271 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  body { background: #F7F5F2; min-height: 100vh; transition: background 0.3s; }
-  .app { max-width: 420px; margin: 0 auto; min-height: 100vh; background: #F7F5F2; display: flex; flex-direction: column; position: relative; transition: background 0.3s; }
+  /* ===== THEME VARIABLES ===== */
+  :root {
+    --bg: #F7F5F2;
+    --card: #ffffff;
+    --card-2: #ffffff;
+    --text: #2C2C2A;
+    --muted: #9A9590;
+    --faint: #B4B2A9;
+    --border: #EBEBEB;
+    --border-2: #E0DDD8;
+    --accent: #BA7517;
+    --serif: #2C2C2A;
+    --btn-bg: #2C2C2A;
+    --btn-text: #F7F5F2;
+    --btn-disabled-bg: #EBEBEB;
+    --btn-disabled-text: #B4B2A9;
+    --nav-active: #2C2C2A;
+    --heart: #E5484D;
+    --good-bg: #EAF3DE;
+    --good-text: #3B6D11;
+  }
+  body.dark {
+    --bg: #0C0B0A;
+    --card: #16140F;
+    --card-2: #1C1913;
+    --text: #F0EBE0;
+    --muted: #9C9488;
+    --faint: #6E675C;
+    --border: #2A2620;
+    --border-2: #322C24;
+    --accent: #C9A24B;
+    --serif: #C9A24B;
+    --btn-bg: linear-gradient(135deg, #C9A24B 0%, #E6C572 100%);
+    --btn-text: #0C0B0A;
+    --btn-disabled-bg: #211D17;
+    --btn-disabled-text: #5A5448;
+    --nav-active: #C9A24B;
+    --heart: #E0707A;
+    --good-bg: #1E2A16;
+    --good-text: #A6C77E;
+  }
 
-  /* ===== DARK MODE (warm cozy) ===== */
-  body.dark { background: #1C1A18; }
-  body.dark .app { background: #1C1A18; }
-  body.dark .loading-text, body.dark .greeting, body.dark .rest-tag, body.dark .booking-detail,
-  body.dark .map-coord, body.dark .auth-sub, body.dark .sub-label, body.dark .stat-label,
-  body.dark .method-sub, body.dark .success-sub, body.dark .booking-date-sub { color: #A8A29C; }
-  body.dark .app-title, body.dark .rest-name, body.dark .rest-detail-name, body.dark .auth-title,
-  body.dark .field-label, body.dark .booking-name, body.dark .stat-val, body.dark .method-title,
-  body.dark .success-title, body.dark .owner-section-title, body.dark .conf-row span:last-child,
-  body.dark .summary-row span:last-child, body.dark .total-row, body.dark .booking-time { color: #F0EBE5; }
-  body.dark .rest-card, body.dark .booking-card, body.dark .stat-card, body.dark .info-field,
-  body.dark .summary-card, body.dark .method-card, body.dark .conf-card, body.dark .search-bar,
-  body.dark .field-input, body.dark .owner-tab, body.dark .avatar-btn {
-    background: #2A2724; border-color: #3D3833; }
-  body.dark .field-input { color: #F0EBE5; }
-  body.dark .field-input::placeholder { color: #7A746E; }
-  body.dark .bottom-panel { background: #2A2724; border-color: #3D3833; }
-  body.dark .rest-img { filter: brightness(0.85); }
-  body.dark .auth-btn, body.dark .confirm-btn, body.dark .btn-accept, body.dark .save-info-btn,
-  body.dark .owner-tab.active { background: #E8DFD5; color: #2A2724; }
-  body.dark .auth-btn:disabled, body.dark .confirm-btn:disabled { background: #3D3833; color: #6B655F; }
-  body.dark .back-btn, body.dark .done-btn, body.dark .btn-decline { background: #2A2724; color: #A8A29C; border-color: #3D3833; }
-  body.dark .search-bar input { color: #F0EBE5; }
-  body.dark .rest-rating { color: #D4A24E; }
-  body.dark .section-label { color: #7A746E; }
-  body.dark .empty-state { color: #A8A29C; }
-  body.dark .time-btn, body.dark .guest-btn { background: #2A2724; color: #C9C2BB; border-color: #3D3833; }
-  body.dark .time-btn.selected, body.dark .guest-btn.selected { background: #E8DFD5; color: #2A2724; border-color: #E8DFD5; }
-  body.dark .table-cell.free { background: #21301A; color: #9BC47A; border-color: #3A5229; }
-  body.dark .table-cell.selected { background: #E8DFD5; color: #2A2724; border-color: #E8DFD5; }
-  body.dark .auth-switch span { color: #E8DFD5; }
-  .theme-toggle { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 0.5px solid #E0DDD8; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
-  body.dark .theme-toggle { background: #2A2724; border-color: #3D3833; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  body { background: var(--bg); min-height: 100vh; transition: background 0.3s; }
+  .app { max-width: 420px; margin: 0 auto; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; transition: background 0.3s; }
+  .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+  .theme-toggle { width: 40px; height: 40px; border-radius: 50%; background: var(--card); border: 0.5px solid var(--border-2); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
 
   /* ===== LOADING ===== */
   .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 12px; }
-  .spinner { width: 32px; height: 32px; border: 3px solid #E0DDD8; border-top-color: #2C2C2A; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border-2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 13px; color: #9A9590; }
+  .loading-text { font-size: 13px; color: var(--muted); }
 
   /* ===== AUTH SCREEN ===== */
   .auth-screen { display: none; flex-direction: column; flex: 1; padding: 40px 24px; justify-content: center; }
   .auth-logo { font-size: 36px; text-align: center; margin-bottom: 8px; }
-  .auth-title { font-size: 24px; font-weight: 500; color: #2C2C2A; text-align: center; }
-  .auth-sub { font-size: 13px; color: #9A9590; text-align: center; margin-top: 4px; margin-bottom: 32px; }
-  .field-label { font-size: 12px; color: #5F5E5A; margin-bottom: 6px; font-weight: 500; }
-  .field-input { width: 100%; background: #fff; border: 0.5px solid #E0DDD8; border-radius: 12px; padding: 13px 14px; font-size: 14px; color: #2C2C2A; margin-bottom: 14px; outline: none; }
-  .field-input:focus { border-color: #2C2C2A; }
-  .auth-btn { width: 100%; background: #2C2C2A; color: #F7F5F2; border: none; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px; }
-  .auth-btn:disabled { background: #EBEBEB; color: #B4B2A9; }
-  .auth-switch { text-align: center; font-size: 13px; color: #9A9590; margin-top: 20px; }
-  .auth-switch span { color: #2C2C2A; font-weight: 500; cursor: pointer; }
+  .auth-title { font-size: 30px; font-weight: 600; color: var(--serif); text-align: center; }
+  .auth-sub { font-size: 13px; color: var(--muted); text-align: center; margin-top: 4px; margin-bottom: 32px; }
+  .field-label { font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+  .field-input { width: 100%; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 12px; padding: 13px 14px; font-size: 14px; color: var(--text); margin-bottom: 14px; outline: none; }
+  .field-input:focus { border-color: var(--accent); }
+  .field-input::placeholder { color: var(--faint); }
+  .auth-btn { width: 100%; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 14px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  .auth-btn:disabled { background: var(--btn-disabled-bg); color: var(--btn-disabled-text); }
+  .auth-switch { text-align: center; font-size: 13px; color: var(--muted); margin-top: 20px; }
+  .auth-switch span { color: var(--accent); font-weight: 600; cursor: pointer; }
   .auth-error { background: #FDF3F3; border: 0.5px solid #F7C1C1; color: #A32D2D; font-size: 12px; padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; display: none; }
 
-  /* ===== HOME SCREEN ===== */
-  .home-screen { display: none; flex-direction: column; flex: 1; }
+  /* ===== GENERIC MAIN SCREEN ===== */
+  .main-screen { display: none; flex-direction: column; flex: 1; }
   .status-bar { padding: 10px 18px 4px; display: flex; justify-content: space-between; }
-  .status-bar span { color: #9A9590; font-size: 11px; }
+  .status-bar span { color: var(--faint); font-size: 11px; }
   .header { padding: 6px 18px 14px; }
   .header-top { display: flex; justify-content: space-between; align-items: center; }
-  .greeting { font-size: 13px; color: #9A9590; }
-  .app-title { font-size: 22px; font-weight: 500; color: #2C2C2A; margin-top: 2px; }
-  .app-subtitle { font-size: 12px; color: #B4B2A9; margin-top: 1px; direction: rtl; }
-  .avatar-btn { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 0.5px solid #E0DDD8; display: flex; align-items: center; justify-content: center; color: #5F5E5A; font-size: 14px; font-weight: 500; cursor: pointer; }
-  .search-bar { background: #fff; border: 0.5px solid #E0DDD8; border-radius: 14px; padding: 10px 14px; margin-top: 14px; display: flex; align-items: center; gap: 8px; }
-  .search-bar input { border: none; outline: none; background: none; font-size: 13px; color: #2C2C2A; width: 100%; }
-  .search-bar input::placeholder { color: #B4B2A9; }
-  .content { flex: 1; overflow-y: auto; padding-bottom: 20px; }
-  .section-label { padding: 6px 18px 10px; font-size: 11px; color: #B4B2A9; letter-spacing: 0.8px; text-transform: uppercase; }
-  .rest-card { background: #fff; border-radius: 18px; border: 0.5px solid #EBEBEB; margin: 0 18px 12px; overflow: hidden; cursor: pointer; }
-  .rest-img { height: 100px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
-  .rest-info { padding: 12px 14px; }
-  .rest-name { font-size: 15px; font-weight: 500; color: #2C2C2A; }
-  .rest-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
-  .rest-tag { font-size: 12px; color: #9A9590; }
-  .rest-rating { font-size: 12px; color: #BA7517; font-weight: 500; }
-  .avail-dot { width: 7px; height: 7px; border-radius: 50%; background: #97C459; display: inline-block; margin-right: 4px; }
-  .avail-text { font-size: 11px; color: #639922; }
-  .empty-state { text-align: center; padding: 60px 24px; color: #9A9590; font-size: 13px; }
+  .greeting { font-size: 13px; color: var(--muted); }
+  .app-title { font-size: 28px; font-weight: 600; color: var(--serif); margin-top: 2px; }
+  .app-subtitle { font-size: 13px; color: var(--faint); margin-top: 1px; direction: rtl; }
+  .avatar-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--card); border: 0.5px solid var(--border-2); display: flex; align-items: center; justify-content: center; color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .search-bar { background: var(--card); border: 0.5px solid var(--border-2); border-radius: 14px; padding: 11px 14px; margin-top: 14px; display: flex; align-items: center; gap: 8px; }
+  .search-bar input { border: none; outline: none; background: none; font-size: 13px; color: var(--text); width: 100%; }
+  .search-bar input::placeholder { color: var(--faint); }
+  .content { flex: 1; overflow-y: auto; padding-bottom: 86px; }
+  .section-label { padding: 14px 18px 10px; font-size: 11px; color: var(--faint); letter-spacing: 0.8px; text-transform: uppercase; }
+  .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+  /* ===== CATEGORY CHIPS ===== */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 18px 6px; -ms-overflow-style: none; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { white-space: nowrap; background: var(--card); border: 0.5px solid var(--border-2); color: var(--muted); border-radius: 20px; padding: 7px 14px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+  .chip.active { background: var(--btn-bg); color: var(--btn-text); border-color: transparent; font-weight: 600; }
+
+  /* ===== FEATURED ROW ===== */
+  .featured-row { display: flex; gap: 12px; overflow-x: auto; padding: 2px 18px 6px; -ms-overflow-style: none; scrollbar-width: none; }
+  .featured-row::-webkit-scrollbar { display: none; }
+  .feat-card { flex: 0 0 160px; background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); overflow: hidden; cursor: pointer; }
+  .feat-photo { position: relative; height: 96px; }
+  .feat-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .feat-emoji { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+  .feat-info { padding: 9px 11px; }
+  .feat-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--serif); line-height: 1.1; }
+  .feat-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ===== AD SLOT ===== */
+  .ad-slot { margin: 6px 18px 4px; border-radius: 16px; padding: 16px; background: linear-gradient(120deg, #2C2C2A, #4a4742); color: #fff; position: relative; overflow: hidden; }
+  body.dark .ad-slot { background: linear-gradient(120deg, #1C1913, #2a2317); border: 0.5px solid var(--accent); }
+  .ad-tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; }
+  .ad-title { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; margin-top: 2px; }
+  body.dark .ad-title { color: var(--accent); }
+  .ad-sub { font-size: 11px; opacity: 0.8; margin-top: 3px; }
+
+  /* ===== RESTAURANT GRID (2 COLUMN, PHOTO-FIRST) ===== */
+  .rest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 16px 4px; }
+  .grid-card { background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); overflow: hidden; cursor: pointer; }
+  .card-photo { position: relative; height: 112px; }
+  .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  body.dark .card-photo img { filter: brightness(0.82); }
+  .card-emoji { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 38px; }
+  .star-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.62); color: #FFD479; font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 10px; backdrop-filter: blur(2px); }
+  .heart-btn { position: absolute; top: 6px; left: 6px; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; color: #B4B2A9; }
+  body.dark .heart-btn { background: rgba(0,0,0,0.5); }
+  .heart-btn.active { color: var(--heart); }
+  .card-info { padding: 10px 11px 12px; }
+  .card-name { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600; color: var(--serif); line-height: 1.05; }
+  .card-cuisine { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .card-area { font-size: 11px; color: var(--faint); margin-top: 4px; }
+  .card-area::before { content: '📍 '; }
 
   /* ===== DETAIL SCREEN ===== */
   .detail-screen { display: none; flex-direction: column; flex: 1; }
-  .detail-header { padding: 10px 18px 16px; }
-  .back-btn { background: #fff; border: 0.5px solid #E0DDD8; border-radius: 10px; padding: 6px 12px; font-size: 12px; color: #5F5E5A; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-  .rest-detail-name { font-size: 20px; font-weight: 500; color: #2C2C2A; margin-top: 12px; }
-  .rest-detail-meta { font-size: 12px; color: #9A9590; margin-top: 3px; }
-  .map-area { height: 150px; background: #E8F0E4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-  .map-label { font-size: 12px; color: #3B6D11; font-weight: 500; }
-  .map-coord { font-size: 11px; color: #639922; }
-  .sub-label { padding: 14px 18px 8px; font-size: 12px; color: #9A9590; font-weight: 500; }
-  .time-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 18px 4px; }
-  .time-btn { background: #fff; border: 0.5px solid #E0DDD8; border-radius: 12px; padding: 10px; font-size: 13px; color: #444441; cursor: pointer; text-align: center; }
-  .time-btn.selected { background: #2C2C2A; color: #F7F5F2; border-color: #2C2C2A; }
-  .guest-btn { flex: 1; background: #fff; border: 0.5px solid #E0DDD8; border-radius: 12px; padding: 10px; font-size: 13px; color: #444441; cursor: pointer; text-align: center; }
-  .guest-btn.selected { background: #2C2C2A; color: #F7F5F2; border-color: #2C2C2A; }
+  .detail-hero { position: relative; height: 220px; background: var(--card); }
+  .detail-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  body.dark .detail-hero img { filter: brightness(0.8); }
+  .detail-hero .hero-emoji { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 70px; }
+  .hero-back { position: absolute; top: 14px; left: 14px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; font-size: 18px; color: #2C2C2A; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .hero-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 70px; background: linear-gradient(to top, rgba(0,0,0,0.45), transparent); }
+  .detail-titlebar { padding: 14px 18px 4px; }
+  .rest-detail-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--serif); }
+  .rest-detail-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .map-area { height: 200px; background: var(--card-2); border-radius: 16px; margin: 14px 18px; overflow: hidden; }
+  .sub-label { padding: 14px 18px 8px; font-size: 12px; color: var(--muted); font-weight: 500; }
+  .guest-btn { flex: 1; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 12px; padding: 10px; font-size: 13px; color: var(--text); cursor: pointer; text-align: center; }
+  .guest-btn.selected { background: var(--btn-bg); color: var(--btn-text); border-color: transparent; }
   .legend { display: flex; gap: 14px; padding: 14px 18px 6px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #9A9590; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
   .table-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 18px 14px; }
-  .table-cell { aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; cursor: pointer; border: 0.5px solid #E0DDD8; }
-  .table-cell.free { background: #F4F8EE; color: #3B6D11; border-color: #C0DD97; }
+  .table-cell { aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-2); }
+  .table-cell.free { background: var(--good-bg); color: var(--good-text); border-color: transparent; }
   .table-cell.taken { background: #FDF3F3; color: #C47070; border-color: #F7C1C1; cursor: not-allowed; }
-  .table-cell.selected { background: #2C2C2A; color: #F7F5F2; border-color: #2C2C2A; }
-  .bottom-panel { background: #fff; border-top: 0.5px solid #EBEBEB; padding: 14px 18px; }
-  .confirm-btn { width: 100%; background: #2C2C2A; color: #F7F5F2; border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 500; cursor: pointer; }
-  .confirm-btn:disabled { background: #EBEBEB; color: #B4B2A9; cursor: not-allowed; }
+  body.dark .table-cell.taken { background: #2A1717; color: #C47070; border-color: #4a2a2a; }
+  .table-cell.selected { background: var(--btn-bg); color: var(--btn-text); border-color: transparent; }
+  .bottom-panel { background: var(--card); border-top: 0.5px solid var(--border); padding: 14px 18px; }
+  .confirm-btn { width: 100%; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .confirm-btn:disabled { background: var(--btn-disabled-bg); color: var(--btn-disabled-text); cursor: not-allowed; }
 
   /* ===== PAYMENT SCREEN ===== */
   .payment-screen { display: none; flex-direction: column; flex: 1; }
-  .summary-card { background: #fff; border-radius: 16px; border: 0.5px solid #EBEBEB; padding: 14px 16px; margin: 0 18px 16px; }
+  .back-btn { background: var(--card); border: 0.5px solid var(--border-2); border-radius: 10px; padding: 6px 12px; font-size: 12px; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .detail-header { padding: 12px 18px 10px; }
+  .summary-card { background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); padding: 14px 16px; margin: 12px 18px 16px; }
   .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
-  .summary-row span:first-child { color: #9A9590; }
-  .summary-row span:last-child { color: #2C2C2A; font-weight: 500; }
-  .divider { border: none; border-top: 0.5px solid #F0EEE9; margin: 8px 0; }
-  .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 500; color: #2C2C2A; padding-top: 4px; }
-  .method-card { background: #fff; border-radius: 16px; border: 0.5px solid #EBEBEB; padding: 14px 16px; margin: 0 18px 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
-  .method-card.selected { border-color: #2C2C2A; background: #FAFAFA; }
-  .method-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
-  .method-title { font-size: 14px; font-weight: 500; color: #2C2C2A; }
-  .method-sub { font-size: 12px; color: #9A9590; margin-top: 2px; }
-  .radio { width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid #D3D1C7; margin-left: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-  .radio.checked { border-color: #2C2C2A; background: #2C2C2A; }
+  .summary-row span:first-child { color: var(--muted); }
+  .summary-row span:last-child { color: var(--text); font-weight: 500; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 8px 0; }
+  .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; color: var(--text); padding-top: 4px; }
+  .method-card { background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); padding: 14px 16px; margin: 0 18px 10px; display: flex; align-items: center; gap: 12px; }
+  .method-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; background: var(--good-bg); }
+  .method-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .method-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .radio { width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid var(--border-2); margin-left: auto; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .radio.checked { border-color: var(--accent); background: var(--accent); }
   .radio.checked::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #fff; }
   .cash-note { background: #FAEEDA; border-radius: 16px; border: 0.5px solid #FAC775; padding: 13px 15px; margin: 0 18px 10px; }
+  body.dark .cash-note { background: #2A2113; border-color: #5a4520; }
   .cash-note-title { font-size: 13px; font-weight: 500; color: #854F0B; }
+  body.dark .cash-note-title { color: var(--accent); }
   .cash-note-sub { font-size: 12px; color: #BA7517; margin-top: 4px; line-height: 1.5; }
 
   /* ===== SUCCESS SCREEN ===== */
   .success-screen { display: none; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 28px 20px; text-align: center; }
-  .success-circle { width: 64px; height: 64px; border-radius: 50%; background: #EAF3DE; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 26px; color: #3B6D11; }
-  .success-title { font-size: 20px; font-weight: 500; color: #2C2C2A; margin-bottom: 6px; }
-  .success-sub { font-size: 13px; color: #9A9590; line-height: 1.6; margin-bottom: 24px; }
-  .conf-card { background: #fff; border-radius: 18px; border: 0.5px solid #EBEBEB; padding: 16px 18px; width: 100%; margin-bottom: 16px; text-align: left; }
-  .conf-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 0.5px solid #F0EEE9; }
+  .success-circle { width: 64px; height: 64px; border-radius: 50%; background: var(--good-bg); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 26px; color: var(--good-text); }
+  .success-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; color: var(--serif); margin-bottom: 6px; }
+  .success-sub { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
+  .conf-card { background: var(--card); border-radius: 18px; border: 0.5px solid var(--border); padding: 16px 18px; width: 100%; margin-bottom: 16px; text-align: left; }
+  .conf-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 0.5px solid var(--border); }
   .conf-row:last-child { border-bottom: none; }
-  .conf-row span:first-child { color: #9A9590; }
-  .conf-row span:last-child { color: #2C2C2A; font-weight: 500; }
-  .done-btn { width: 100%; background: none; border: 0.5px solid #D3D1C7; border-radius: 14px; padding: 12px; font-size: 13px; color: #5F5E5A; cursor: pointer; }
+  .conf-row span:first-child { color: var(--muted); }
+  .conf-row span:last-child { color: var(--text); font-weight: 500; }
+  .done-btn { width: 100%; background: none; border: 0.5px solid var(--border-2); border-radius: 14px; padding: 12px; font-size: 13px; color: var(--text); cursor: pointer; }
 
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2C2C2A; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
+  .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%); background: #2C2C2A; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; max-width: 360px; text-align: center; }
+  body.dark .toast { background: #C9A24B; color: #0C0B0A; font-weight: 500; }
   .toast.show { opacity: 1; }
 
-  /* ===== OWNER DASHBOARD ===== */
+  /* ===== BOTTOM NAV ===== */
+  .bottomnav { display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: var(--card); border-top: 0.5px solid var(--border); z-index: 100; }
+  .bottomnav.visible { display: flex; }
+  .nav-item { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 10px; color: var(--muted); cursor: pointer; }
+  .nav-item .nav-ic { font-size: 19px; display: block; margin-bottom: 3px; filter: grayscale(0.4); }
+  .nav-item.active { color: var(--nav-active); font-weight: 600; }
+  .nav-item.active .nav-ic { filter: none; }
+
+  /* ===== PROFILE ===== */
+  .profile-card { background: var(--card); border-radius: 18px; border: 0.5px solid var(--border); margin: 6px 18px 8px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+  .profile-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--btn-bg); color: var(--btn-text); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 600; font-family: 'Cormorant Garamond', serif; }
+  .profile-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: var(--serif); }
+  .profile-email { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .prof-group { margin: 14px 18px 0; }
+  .prof-group-title { font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; padding-left: 4px; }
+  .prof-list { background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); overflow: hidden; }
+  .prof-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border-bottom: 0.5px solid var(--border); }
+  .prof-row:last-child { border-bottom: none; }
+  .prof-row .pr-ic { font-size: 17px; width: 24px; text-align: center; }
+  .prof-row .pr-label { font-size: 14px; color: var(--text); flex: 1; }
+  .prof-row .pr-chev { color: var(--faint); font-size: 14px; }
+  .prof-row.logout .pr-label { color: #C0504D; }
+  .switch { width: 42px; height: 24px; border-radius: 12px; background: var(--border-2); position: relative; transition: background 0.2s; flex-shrink: 0; }
+  .switch.on { background: var(--accent); }
+  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.2s; }
+  .switch.on::after { left: 20px; }
+
+  /* ===== LISTS (SAVED) ===== */
+  .list-btn { margin: 6px 18px 10px; background: var(--card); border: 1px dashed var(--border-2); color: var(--accent); border-radius: 14px; padding: 13px; font-size: 13px; font-weight: 600; cursor: pointer; width: calc(100% - 36px); }
+  .list-card { background: var(--card); border-radius: 14px; border: 0.5px solid var(--border); margin: 0 18px 10px; padding: 13px 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .list-emoji { font-size: 22px; }
+  .list-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--serif); }
+  .list-count { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .list-del { margin-left: auto; color: var(--faint); font-size: 16px; cursor: pointer; padding: 4px 8px; }
+
+  /* ===== OWNER / ADMIN DASHBOARD ===== */
   .owner-screen { display: none; flex-direction: column; flex: 1; }
   .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 18px 14px; }
-  .stat-card { background: #fff; border-radius: 14px; border: 0.5px solid #EBEBEB; padding: 12px 14px; }
-  .stat-label { font-size: 11px; color: #9A9590; }
-  .stat-val { font-size: 22px; font-weight: 500; color: #2C2C2A; margin-top: 2px; }
+  .stat-card { background: var(--card); border-radius: 14px; border: 0.5px solid var(--border); padding: 12px 14px; }
+  .stat-label { font-size: 11px; color: var(--muted); }
+  .stat-val { font-size: 22px; font-weight: 600; color: var(--text); margin-top: 2px; }
   .owner-tabs { display: flex; gap: 6px; padding: 0 18px 12px; }
-  .owner-tab { flex: 1; text-align: center; padding: 8px; border-radius: 10px; font-size: 12px; color: #9A9590; background: #fff; border: 0.5px solid #E0DDD8; cursor: pointer; }
-  .owner-tab.active { background: #2C2C2A; color: #F7F5F2; border-color: #2C2C2A; }
-  .booking-card { background: #fff; border-radius: 16px; border: 0.5px solid #EBEBEB; margin: 0 18px 10px; padding: 13px 14px; }
-  .booking-card.new { border-color: #C0DD97; background: #FAFDF6; }
-  .new-badge { display: inline-block; background: #EAF3DE; color: #3B6D11; font-size: 10px; font-weight: 500; border-radius: 8px; padding: 2px 8px; margin-bottom: 6px; }
+  .owner-tab { flex: 1; text-align: center; padding: 8px; border-radius: 10px; font-size: 12px; color: var(--muted); background: var(--card); border: 0.5px solid var(--border-2); cursor: pointer; }
+  .owner-tab.active { background: var(--btn-bg); color: var(--btn-text); border-color: transparent; }
+  .booking-card { background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); margin: 0 18px 10px; padding: 13px 14px; }
+  .booking-card.new { border-color: var(--good-text); }
+  .new-badge { display: inline-block; background: var(--good-bg); color: var(--good-text); font-size: 10px; font-weight: 500; border-radius: 8px; padding: 2px 8px; margin-bottom: 6px; }
   .booking-top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .booking-name { font-size: 14px; font-weight: 500; color: #2C2C2A; }
-  .booking-detail { font-size: 12px; color: #9A9590; margin-top: 3px; }
-  .booking-time { font-size: 13px; font-weight: 500; color: #2C2C2A; text-align: right; }
-  .booking-date-sub { font-size: 11px; color: #9A9590; text-align: right; margin-top: 2px; }
+  .booking-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .booking-detail { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .booking-time { font-size: 13px; font-weight: 600; color: var(--text); text-align: right; }
+  .booking-date-sub { font-size: 11px; color: var(--muted); text-align: right; margin-top: 2px; }
   .booking-actions { display: flex; gap: 8px; margin-top: 10px; }
-  .btn-accept { flex: 1; background: #2C2C2A; color: #F7F5F2; border: none; border-radius: 10px; padding: 8px; font-size: 12px; font-weight: 500; cursor: pointer; }
-  .btn-decline { flex: 1; background: #fff; color: #9A9590; border: 0.5px solid #E0DDD8; border-radius: 10px; padding: 8px; font-size: 12px; cursor: pointer; }
+  .btn-accept { flex: 1; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 10px; padding: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-decline { flex: 1; background: var(--card); color: var(--muted); border: 0.5px solid var(--border-2); border-radius: 10px; padding: 8px; font-size: 12px; cursor: pointer; }
   .status-pill { font-size: 10px; border-radius: 8px; padding: 3px 8px; font-weight: 500; }
-  .status-pill.confirmed { background: #EAF3DE; color: #3B6D11; }
-  .status-pill.cancelled { background: #F1EFE8; color: #5F5E5A; }
-  .owner-section-title { padding: 14px 18px 10px; font-size: 15px; font-weight: 500; color: #2C2C2A; }
-  .info-field { background: #fff; border-radius: 14px; border: 0.5px solid #EBEBEB; margin: 0 18px 10px; padding: 12px 14px; }
-  .info-field label { font-size: 11px; color: #9A9590; display: block; margin-bottom: 4px; }
-  .info-field input, .info-field textarea { width: 100%; border: none; outline: none; font-size: 14px; color: #2C2C2A; font-family: inherit; }
-  .save-info-btn { background: #2C2C2A; color: #F7F5F2; border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 500; cursor: pointer; margin: 8px 18px; width: calc(100% - 36px); }
+  .status-pill.confirmed { background: var(--good-bg); color: var(--good-text); }
+  .status-pill.cancelled { background: var(--border); color: var(--muted); }
+  .owner-section-title { padding: 14px 18px 10px; font-size: 18px; font-weight: 600; color: var(--serif); font-family: 'Cormorant Garamond', serif; }
+  .info-field { background: var(--card); border-radius: 14px; border: 0.5px solid var(--border); margin: 0 18px 10px; padding: 12px 14px; }
+  .info-field label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .info-field input, .info-field textarea { width: 100%; border: none; outline: none; font-size: 14px; color: var(--text); font-family: inherit; background: none; }
+  .save-info-btn { background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 8px 18px; width: calc(100% - 36px); }
+
+  .explore-btn { display: block; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 14px 18px; width: calc(100% - 36px); text-align: center; }
 </style>
 </head>
 <body>
@@ -197,9 +287,9 @@
   <!-- SIGNUP ROLE SELECTION -->
   <div id="signup-role-screen" class="auth-screen" style="display:none;">
     <div class="auth-logo">🍽️</div>
-    <div class="auth-title">Join Erbil Eats</div>
+    <div class="auth-title serif">Join Erbil Eats</div>
     <div class="auth-sub">What are you?</div>
-    <button class="auth-btn" style="margin-top:32px; background:#2C2C2A;" onclick="selectSignupRole('customer')">🧑 I'm a customer</button>
+    <button class="auth-btn" style="margin-top:32px;" onclick="selectSignupRole('customer')">🧑 I'm a customer</button>
     <button class="auth-btn" style="margin-top:12px; background:#639922;" onclick="selectSignupRole('restaurant_owner')">🍴 I'm a restaurant owner</button>
     <div class="auth-switch" style="margin-top:40px;">
       Already have an account? <span onclick="goToSignIn()">Sign in</span>
@@ -209,8 +299,8 @@
   <!-- AUTH -->
   <div id="auth-screen" class="auth-screen">
     <div class="auth-logo">🍽️</div>
-    <div class="auth-title" id="auth-title">Welcome back</div>
-    <div class="auth-sub" id="auth-sub">Sign in to book a table</div>
+    <div class="auth-title serif" id="auth-title">Welcome back</div>
+    <div class="auth-sub" id="auth-sub">Sign in to book a table · أهلاً بك</div>
 
     <div class="auth-error" id="auth-error"></div>
 
@@ -240,12 +330,12 @@
     <button class="auth-btn" id="auth-submit-btn" onclick="handleAuth()">Sign in</button>
 
     <div style="display:flex; align-items:center; gap:10px; margin:20px 0;">
-      <div style="flex:1; height:1px; background:#E0DDD8;"></div>
-      <span style="font-size:11px; color:#B4B2A9;">OR</span>
-      <div style="flex:1; height:1px; background:#E0DDD8;"></div>
+      <div style="flex:1; height:1px; background:var(--border-2);"></div>
+      <span style="font-size:11px; color:var(--faint);">OR</span>
+      <div style="flex:1; height:1px; background:var(--border-2);"></div>
     </div>
 
-    <button class="auth-btn" onclick="handleGoogleSignIn()" style="background:#fff; color:#2C2C2A; border:0.5px solid #E0DDD8; display:flex; align-items:center; justify-content:center; gap:10px;">
+    <button class="auth-btn" onclick="handleGoogleSignIn()" style="background:var(--card); color:var(--text); border:0.5px solid var(--border-2); display:flex; align-items:center; justify-content:center; gap:10px;">
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Continue with Google
     </button>
@@ -262,37 +352,38 @@
       <div class="header-top">
         <div>
           <div class="greeting">Admin panel</div>
-          <div class="app-title" style="font-size:18px;">Erbil Eats</div>
+          <div class="app-title" style="font-size:22px;">Erbil Eats</div>
         </div>
-        <div class="avatar-btn" onclick="handleLogout()" title="Tap to log out">⎋</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
+          <div class="avatar-btn" onclick="handleLogout()" title="Tap to log out">⎋</div>
+        </div>
       </div>
     </div>
     <div class="owner-tabs">
       <div class="owner-tab active" id="admin-tab-pending" onclick="switchAdminTab('pending')">Pending owners</div>
       <div class="owner-tab" id="admin-tab-users" onclick="switchAdminTab('users')">All users</div>
     </div>
-    <div class="content" id="admin-content">
-      <!-- populated by JS -->
-    </div>
+    <div class="content" id="admin-content" style="padding-bottom:20px;"></div>
   </div>
 
   <!-- HOME -->
-  <div id="home-screen" class="home-screen">
+  <div id="home-screen" class="main-screen">
     <div class="status-bar"><span id="clock">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
           <div class="greeting" id="greeting-text">Good evening 🌙</div>
-          <div class="app-title">Erbil Eats</div>
+          <div class="app-title serif">Erbil Eats</div>
           <div class="app-subtitle">أكلات أربيل</div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
           <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
           <div class="avatar-btn" onclick="openNotifications()" title="Notifications" style="position:relative;">
             🔔
-            <span id="notif-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:#E5484D; color:#fff; font-size:9px; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 4px;">0</span>
+            <span id="notif-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:#E5484D; color:#fff; font-size:9px; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
           </div>
-          <div class="avatar-btn" id="avatar-initial" onclick="handleLogout()" title="Tap to log out">A</div>
+          <div class="avatar-btn" id="avatar-initial" onclick="navTo('profile')" title="Profile">A</div>
         </div>
       </div>
       <div class="search-bar">
@@ -300,53 +391,109 @@
         <input id="search-input" placeholder="Find a restaurant..." oninput="filterRestaurants()">
       </div>
     </div>
-    <div class="content" id="restaurant-list">
-      <!-- populated by JS -->
+    <div class="content">
+      <div class="chips" id="home-chips"></div>
+      <div class="section-label">Featured in Erbil · الأبرز</div>
+      <div class="featured-row" id="featured-row"></div>
+      <div class="ad-slot" onclick="comingSoon('Advertising')">
+        <div class="ad-tag">Sponsored</div>
+        <div class="ad-title">Promote your restaurant here</div>
+        <div class="ad-sub">Reach diners across Erbil · أعلن معنا</div>
+      </div>
+      <div class="section-label">All restaurants · كل المطاعم</div>
+      <div class="rest-grid" id="restaurant-list"></div>
     </div>
-    <div style="display:flex; border-top:0.5px solid #EBEBEB; background:#fff;">
-      <div onclick="goHome()" style="flex:1; text-align:center; padding:12px; font-size:11px; color:#2C2C2A; cursor:pointer;">🏠<br>Home</div>
-      <div onclick="openMyBookings()" style="flex:1; text-align:center; padding:12px; font-size:11px; color:#9A9590; cursor:pointer;">📅<br>My Bookings</div>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="search-screen" class="main-screen">
+    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="greeting">Discover</div>
+          <div class="app-title serif" style="font-size:24px;">Search</div>
+        </div>
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
+      </div>
+      <div class="search-bar">
+        <span>🔍</span>
+        <input id="search-input2" placeholder="Search restaurants & cuisines..." oninput="filterSearch()">
+      </div>
+    </div>
+    <div class="content">
+      <div class="chips" id="search-chips"></div>
+      <div class="rest-grid" id="search-list"></div>
     </div>
   </div>
 
   <!-- MY BOOKINGS -->
-  <div id="bookings-screen" class="home-screen">
-    <div class="status-bar"><span id="bookings-clock">9:41</span><span>●●●</span></div>
+  <div id="bookings-screen" class="main-screen">
+    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
           <div class="greeting">Your reservations</div>
-          <div class="app-title" style="font-size:20px;">My Bookings</div>
+          <div class="app-title serif" style="font-size:24px;">My Bookings</div>
         </div>
-        <div class="avatar-btn" onclick="goHome()" title="Back home">←</div>
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
       </div>
     </div>
-    <div class="content" id="my-bookings-list">
-      <!-- populated by JS -->
+    <div class="content" id="my-bookings-list"></div>
+  </div>
+
+  <!-- SAVED / FAVOURITES -->
+  <div id="saved-screen" class="main-screen">
+    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="greeting">Your favourites</div>
+          <div class="app-title serif" style="font-size:24px;" id="saved-title">Saved</div>
+        </div>
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
+      </div>
     </div>
-    <div style="display:flex; border-top:0.5px solid #EBEBEB; background:#fff;">
-      <div onclick="goHome()" style="flex:1; text-align:center; padding:12px; font-size:11px; color:#9A9590; cursor:pointer;">🏠<br>Home</div>
-      <div onclick="openMyBookings()" style="flex:1; text-align:center; padding:12px; font-size:11px; color:#2C2C2A; cursor:pointer;">📅<br>My Bookings</div>
+    <div class="content" id="saved-content"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="profile-screen" class="main-screen">
+    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="greeting">Account</div>
+          <div class="app-title serif" style="font-size:24px;">Profile</div>
+        </div>
+        <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
+      </div>
     </div>
+    <div class="content" id="profile-content"></div>
   </div>
 
   <!-- DETAIL -->
   <div id="detail-screen" class="detail-screen">
-    <div class="detail-header">
-      <button class="back-btn" onclick="goHome()">← Back</button>
-      <div class="rest-detail-name" id="d-name"></div>
-      <div class="rest-detail-meta" id="d-meta"></div>
+    <div class="detail-hero">
+      <img id="d-hero-img" alt="" style="display:none;" onerror="this.style.display='none';document.getElementById('d-hero-emoji').style.display='flex';">
+      <div class="hero-emoji" id="d-hero-emoji">🍴</div>
+      <button class="hero-back" onclick="navBackFromDetail()">←</button>
+      <div class="hero-fade"></div>
     </div>
-    <div class="content">
-      <div class="map-area" id="detail-map" style="height:200px; border-radius:16px; margin:14px 18px; overflow:hidden;">
-        <div style="display:flex; align-items:center; justify-content:center; height:100%; background:#E8F0E4; color:#3B6D11; font-size:13px;">Loading map...</div>
+    <div class="content" style="padding-bottom:20px;">
+      <div class="detail-titlebar">
+        <div class="rest-detail-name" id="d-name"></div>
+        <div class="rest-detail-meta" id="d-meta"></div>
+      </div>
+      <div class="map-area" id="detail-map">
+        <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:13px;">Loading map...</div>
       </div>
       <div id="tour-section" style="display:none;">
         <div class="sub-label">360° View | جولة افتراضية</div>
-        <div style="margin:0 18px 4px; border-radius:16px; overflow:hidden; border:0.5px solid #E0DDD8;">
+        <div style="margin:0 18px 4px; border-radius:16px; overflow:hidden; border:0.5px solid var(--border-2);">
           <iframe id="tour-frame" style="width:100%; height:240px; border:none; display:block;" allowfullscreen></iframe>
         </div>
-        <div style="padding:2px 18px 8px; font-size:11px; color:#B4B2A9;">Drag to look around · اسحب للنظر حولك</div>
+        <div style="padding:2px 18px 8px; font-size:11px; color:var(--faint);">Drag to look around · اسحب للنظر حولك</div>
       </div>
       <div class="sub-label">Pick a date | اختر التاريخ</div>
       <div style="padding:0 18px 4px;">
@@ -369,11 +516,9 @@
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#C0DD97;"></div>Free</div>
         <div class="legend-item"><div class="legend-dot" style="background:#F7C1C1;"></div>Taken</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#2C2C2A;"></div>Selected</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Selected</div>
       </div>
-      <div class="table-grid" id="table-grid">
-        <!-- populated by JS -->
-      </div>
+      <div class="table-grid" id="table-grid"></div>
     </div>
     <div class="bottom-panel">
       <button class="confirm-btn" id="book-btn" disabled onclick="goToPayment()">Select a table to reserve</button>
@@ -384,10 +529,10 @@
   <div id="payment-screen" class="payment-screen">
     <div class="detail-header">
       <button class="back-btn" onclick="backToDetail()">← Back</button>
-      <div class="rest-detail-name" style="font-size:18px;">Complete booking</div>
+      <div class="rest-detail-name" style="font-size:22px; margin-top:10px;">Complete booking</div>
       <div class="rest-detail-meta" id="p-meta"></div>
     </div>
-    <div class="content">
+    <div class="content" style="padding-bottom:20px;">
       <div class="summary-card">
         <div class="summary-row"><span>Restaurant</span><span id="p-rest"></span></div>
         <div class="summary-row"><span>Table</span><span id="p-table"></span></div>
@@ -396,8 +541,8 @@
         <div class="total-row"><span>Reservation fee</span><span>1,000 IQD</span></div>
       </div>
       <div class="section-label" style="padding-left:18px;">Payment · الدفع</div>
-      <div class="method-card selected" id="card-cash" style="cursor:default;">
-        <div class="method-icon" style="background:#EAF3DE;">💵</div>
+      <div class="method-card" id="card-cash" style="cursor:default;">
+        <div class="method-icon">💵</div>
         <div>
           <div class="method-title">Pay cash at restaurant</div>
           <div class="method-sub">Pay 1,000 IQD when you arrive</div>
@@ -425,7 +570,7 @@
       <div class="conf-row"><span>Time</span><span id="c-time">—</span></div>
       <div class="conf-row"><span>Payment</span><span id="c-payment">—</span></div>
     </div>
-    <button class="done-btn" onclick="goHome()">🏠 Back to home</button>
+    <button class="done-btn" onclick="navTo('home')">🏠 Back to home</button>
   </div>
 
   <!-- OWNER DASHBOARD -->
@@ -435,9 +580,12 @@
       <div class="header-top">
         <div>
           <div class="greeting" id="owner-rest-name">Restaurant</div>
-          <div class="app-title" style="font-size:18px;">Owner dashboard</div>
+          <div class="app-title serif" style="font-size:22px;">Owner dashboard</div>
         </div>
-        <div class="avatar-btn" onclick="handleLogout()" title="Tap to log out">⎋</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
+          <div class="avatar-btn" onclick="handleLogout()" title="Tap to log out">⎋</div>
+        </div>
       </div>
     </div>
     <div class="stats-row">
@@ -458,9 +606,16 @@
       <div class="owner-tab" id="tab-info" onclick="switchOwnerTab('info')">Restaurant info</div>
       <div class="owner-tab" id="tab-stats" onclick="switchOwnerTab('stats')">Analytics</div>
     </div>
-    <div class="content" id="owner-content">
-      <!-- populated by JS -->
-    </div>
+    <div class="content" id="owner-content" style="padding-bottom:20px;"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottomnav" id="bottomnav">
+    <div class="nav-item" data-nav="home" onclick="navTo('home')"><span class="nav-ic">🏠</span>Home</div>
+    <div class="nav-item" data-nav="search" onclick="navTo('search')"><span class="nav-ic">🔍</span>Search</div>
+    <div class="nav-item" data-nav="bookings" onclick="navTo('bookings')"><span class="nav-ic">📅</span>Bookings</div>
+    <div class="nav-item" data-nav="saved" onclick="navTo('saved')"><span class="nav-ic">❤️</span>Saved</div>
+    <div class="nav-item" data-nav="profile" onclick="navTo('profile')"><span class="nav-ic">👤</span>Profile</div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -472,6 +627,8 @@ const SUPABASE_URL = 'https://nbarrdiilyjqgszjztgs.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_HMtgzyJ9VLsJhlVRbawgoA_kI_7eiM2';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const ADMIN_USER_ID = '30997342-e713-433e-abec-15b92432a24e';  // Abbas (admin)
+const ADMIN_EMAIL = 'abbassaadoon7@gmail.com';
 
 let currentUser = null;
 let currentProfile = null;
@@ -483,15 +640,26 @@ let selectedTableNumber = null;
 let selectedTime = null;
 let selectedDate = null;
 let selectedGuests = 2;
+let lastMain = 'home';
+
+// favourites state
+let favSet = new Set();
+let allFavs = [];      // [{restaurant_id, list_id}]
+let favLists = [];     // [{id, name, ...}]
+let activeCategory = 'All';
+let activeSearchCategory = 'All';
+
+const MAIN_SCREENS = ['home','search','bookings','saved','profile'];
+const SCREEN_IDS = {
+  home: 'home-screen', search: 'search-screen', bookings: 'bookings-screen',
+  saved: 'saved-screen', profile: 'profile-screen'
+};
 
 // ===== INIT =====
 async function init() {
   document.getElementById('booking-date').min = new Date().toISOString().split('T')[0];
-
-  // Load saved theme preference
   loadTheme();
 
-  // Handle OAuth redirect (Google sign-in returns here)
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -500,7 +668,6 @@ async function init() {
     showScreen('auth-screen');
   }
 
-  // Listen for auth changes (catches Google sign-in completion)
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session && !currentUser) {
       currentUser = session.user;
@@ -515,16 +682,17 @@ function loadTheme() {
   try { saved = localStorage.getItem('erbil-theme') || 'light'; } catch (e) {}
   if (saved === 'dark') {
     document.body.classList.add('dark');
-    const toggle = document.getElementById('theme-toggle');
-    if (toggle) toggle.textContent = '☀️';
+    document.querySelectorAll('.theme-toggle').forEach(t => t.textContent = '☀️');
   }
 }
 
 function toggleTheme() {
   const isDark = document.body.classList.toggle('dark');
-  const toggle = document.getElementById('theme-toggle');
-  if (toggle) toggle.textContent = isDark ? '☀️' : '🌙';
+  document.querySelectorAll('.theme-toggle').forEach(t => t.textContent = isDark ? '☀️' : '🌙');
   try { localStorage.setItem('erbil-theme', isDark ? 'dark' : 'light'); } catch (e) {}
+  // keep profile switch in sync if visible
+  const sw = document.getElementById('dark-switch');
+  if (sw) sw.classList.toggle('on', isDark);
 }
 
 function showToast(msg) {
@@ -534,24 +702,47 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function showScreen(id) {
-  ['loading-screen','auth-screen','signup-role-screen','home-screen','bookings-screen','detail-screen','payment-screen','success-screen','owner-screen','admin-screen'].forEach(s => {
-    document.getElementById(s).style.display = 'none';
-  });
-  document.getElementById(id).style.display = 'flex';
+function comingSoon(label) {
+  showToast((label ? label + ': ' : '') + 'coming soon 🚧');
 }
 
+const ALL_SCREENS = ['loading-screen','auth-screen','signup-role-screen','home-screen','search-screen','bookings-screen','saved-screen','profile-screen','detail-screen','payment-screen','success-screen','owner-screen','admin-screen'];
+
+function showScreen(id) {
+  ALL_SCREENS.forEach(s => { const el = document.getElementById(s); if (el) el.style.display = 'none'; });
+  document.getElementById(id).style.display = 'flex';
+
+  // show bottom nav only on the 5 main screens
+  const nav = document.getElementById('bottomnav');
+  const navKey = Object.keys(SCREEN_IDS).find(k => SCREEN_IDS[k] === id);
+  if (navKey) {
+    nav.classList.add('visible');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === navKey));
+  } else {
+    nav.classList.remove('visible');
+  }
+}
+
+// ===== BOTTOM NAV ROUTING =====
+function navTo(key) {
+  if (key === 'home') { lastMain = 'home'; loadHome(); return; }
+  if (!currentUser) { showScreen('auth-screen'); return; }
+  lastMain = key;
+  if (key === 'search') openSearch();
+  else if (key === 'bookings') openMyBookings();
+  else if (key === 'saved') openSaved();
+  else if (key === 'profile') openProfile();
+}
+
+// ===== SIGNUP / SIGN IN TOGGLES =====
 let signupMode = 'customer';
 
-function goToSignupRole() {
-  signupMode = 'customer';
-  showScreen('signup-role-screen');
-}
+function goToSignupRole() { signupMode = 'customer'; showScreen('signup-role-screen'); }
 
 function goToSignIn() {
   isSignupMode = false;
   document.getElementById('auth-title').textContent = 'Welcome back';
-  document.getElementById('auth-sub').textContent = 'Sign in to book a table';
+  document.getElementById('auth-sub').textContent = 'Sign in to book a table · أهلاً بك';
   document.getElementById('name-field').style.display = 'none';
   document.getElementById('phone-field').style.display = 'none';
   document.getElementById('restaurant-field').style.display = 'none';
@@ -563,7 +754,6 @@ function goToSignIn() {
 async function selectSignupRole(role) {
   signupMode = role;
   isSignupMode = true;
-  
   document.getElementById('auth-title').textContent = role === 'customer' ? 'Create account' : 'Restaurant owner signup';
   document.getElementById('auth-sub').textContent = role === 'customer' ? 'Sign up to start booking' : 'Set up your restaurant account';
   document.getElementById('name-field').style.display = 'block';
@@ -578,28 +768,14 @@ async function selectSignupRole(role) {
     select.innerHTML = '<option value="">Select a restaurant...</option>';
     (rests || []).forEach(r => {
       const opt = document.createElement('option');
-      opt.value = r.id;
-      opt.textContent = r.name;
+      opt.value = r.id; opt.textContent = r.name;
       select.appendChild(opt);
     });
   }
-
   showScreen('auth-screen');
 }
 
 // ===== AUTH =====
-function toggleAuthMode() {
-  isSignupMode = !isSignupMode;
-  document.getElementById('auth-title').textContent = isSignupMode ? 'Create account' : 'Welcome back';
-  document.getElementById('auth-sub').textContent = isSignupMode ? 'Sign up to start booking' : 'Sign in to book a table';
-  document.getElementById('name-field').style.display = isSignupMode ? 'block' : 'none';
-  document.getElementById('auth-submit-btn').textContent = isSignupMode ? 'Sign up' : 'Sign in';
-  document.getElementById('auth-switch-text').innerHTML = isSignupMode
-    ? 'Already have an account? <span onclick="toggleAuthMode()">Sign in</span>'
-    : "Don't have an account? <span onclick=\"toggleAuthMode()\">Sign up</span>";
-  document.getElementById('auth-error').style.display = 'none';
-}
-
 async function handleAuth() {
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
@@ -622,8 +798,7 @@ async function handleAuth() {
       if (!name) {
         errorBox.textContent = 'Please enter your name.';
         errorBox.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = 'Sign up';
+        btn.disabled = false; btn.textContent = 'Sign up';
         return;
       }
 
@@ -632,24 +807,17 @@ async function handleAuth() {
         if (!restaurantId) {
           errorBox.textContent = 'Please select a restaurant.';
           errorBox.style.display = 'block';
-          btn.disabled = false;
-          btn.textContent = 'Sign up';
+          btn.disabled = false; btn.textContent = 'Sign up';
           return;
         }
-        
         const { data, error } = await sb.auth.signUp({ email, password });
         if (error) throw error;
-
         if (data.user) {
           await sb.from('profiles').insert({
-            id: data.user.id,
-            full_name: name,
+            id: data.user.id, full_name: name,
             phone: document.getElementById('signup-phone').value.trim() || null,
-            role: 'restaurant_owner',
-            restaurant_id: restaurantId,
-            approval_status: 'pending'
+            role: 'restaurant_owner', restaurant_id: restaurantId, approval_status: 'pending'
           });
-          // Get restaurant name for the email
           const selectedRestName = document.getElementById('signup-restaurant').selectedOptions[0]?.textContent || '';
           notifyAdminOfSignup(name, email, 'restaurant_owner', selectedRestName);
           currentUser = data.user;
@@ -661,14 +829,11 @@ async function handleAuth() {
       } else {
         const { data, error } = await sb.auth.signUp({ email, password });
         if (error) throw error;
-
         if (data.user) {
           await sb.from('profiles').insert({
-            id: data.user.id,
-            full_name: name,
+            id: data.user.id, full_name: name,
             phone: document.getElementById('signup-phone').value.trim() || null,
-            role: 'customer',
-            approval_status: 'approved'
+            role: 'customer', approval_status: 'approved'
           });
           notifyAdminOfSignup(name, email, 'customer', '');
           currentUser = data.user;
@@ -691,42 +856,78 @@ async function handleAuth() {
 }
 
 async function handleGoogleSignIn() {
-  const { data, error } = await sb.auth.signInWithOAuth({
+  const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: window.location.href
-    }
+    options: { redirectTo: window.location.href }
   });
-  if (error) {
-    showToast('Google sign-in failed: ' + error.message);
-  }
+  if (error) showToast('Google sign-in failed: ' + error.message);
 }
 
 async function handleLogout() {
   if (!confirm('Log out of Erbil Eats?')) return;
   await sb.auth.signOut();
-  currentUser = null;
+  currentUser = null; currentProfile = null;
+  favSet = new Set(); allFavs = []; favLists = [];
   showScreen('auth-screen');
 }
 
-// ===== HOME / RESTAURANTS =====
-const ADMIN_USER_ID = '30997342-e713-433e-abec-15b92432a24e';  // Your customer account ID (Abbas)
+// ===== PHOTO MATCHING =====
+const PHOTOS = {
+  coffee: 'photo-1554118811-1e0d58224f24',
+  burger: 'photo-1568901346375-23c9450c58cd',
+  american: 'photo-1550547660-d9450f859349',
+  italian: 'photo-1551183053-bf91a1d81141',
+  pizza: 'photo-1513104890138-7c749659a591',
+  grill: 'photo-1555939594-58d7cb561ad1',
+  steak: 'photo-1600891964092-4316c288032e',
+  sushi: 'photo-1579584425555-c3ce17fd4351',
+  turkish: 'photo-1561651823-34feb02250e4',
+  kurdish: 'photo-1414235077428-338989a2e8c0',
+  donut: 'photo-1551024601-bec78aea704b',
+  brunch: 'photo-1525351484163-7529414344d8',
+  wine: 'photo-1510812431401-41d2bd2722f3',
+  pub: 'photo-1514933651103-005eec06c04b',
+  restaurant: 'photo-1517248135467-4c7edcad34c4'
+};
+const PHOTO_KEYWORDS = [
+  ['coffee', ['coffee','cafe','café']],
+  ['burger', ['burger']],
+  ['american', ['american']],
+  ['pizza', ['pizza']],
+  ['italian', ['italian','pasta','trattoria']],
+  ['steak', ['steak','steakhouse']],
+  ['grill', ['grill','bbq','kebab','barbecue']],
+  ['sushi', ['sushi','japanese']],
+  ['turkish', ['turkish','ottoman']],
+  ['kurdish', ['kurdish','iraqi','middle','arab']],
+  ['donut', ['donut','doughnut','dessert','bakery','sweet']],
+  ['brunch', ['brunch','breakfast']],
+  ['wine', ['wine','fine','lounge']],
+  ['pub', ['pub','bar']]
+];
 
+function unsplash(id) { return 'https://images.unsplash.com/' + id + '?auto=format&fit=crop&w=500&q=70'; }
+
+function photoFor(r) {
+  if (r && r.photo_url && r.photo_url.trim()) return r.photo_url.trim();
+  const text = ((r.cuisine || '') + ' ' + (r.name || '')).toLowerCase();
+  for (const [key, words] of PHOTO_KEYWORDS) {
+    if (words.some(w => text.includes(w))) return unsplash(PHOTOS[key]);
+  }
+  return unsplash(PHOTOS.restaurant);
+}
+
+// ===== HOME / RESTAURANTS =====
 async function loadHome() {
   showScreen('loading-screen');
 
   let { data: profile, error: profileError } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
 
-  // If no profile exists (e.g. Google sign-in first time), create one
   if (profileError || !profile) {
     const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email.split('@')[0];
     const { data: newProfile, error: createError } = await sb.from('profiles').insert({
-      id: currentUser.id,
-      full_name: fullName,
-      role: 'customer',
-      approval_status: 'approved'
+      id: currentUser.id, full_name: fullName, role: 'customer', approval_status: 'approved'
     }).select().single();
-
     if (createError) {
       showToast('Could not set up your profile: ' + createError.message);
       showScreen('auth-screen');
@@ -738,13 +939,8 @@ async function loadHome() {
 
   currentProfile = profile;
 
-  // Check if user is admin
-  if (currentUser.id === ADMIN_USER_ID) {
-    await loadAdminDashboard();
-    return;
-  }
+  if (currentUser.id === ADMIN_USER_ID) { await loadAdminDashboard(); return; }
 
-  // Check if owner is approved
   if (profile.role === 'restaurant_owner') {
     if (profile.approval_status !== 'approved') {
       showToast('Your account is pending approval. Please check back soon.');
@@ -765,46 +961,106 @@ async function loadHome() {
   document.getElementById('avatar-initial').textContent = initial;
 
   const { data, error } = await sb.from('restaurants').select('*').eq('is_active', true).order('rating', { ascending: false });
+  restaurants = error ? [] : (data || []);
+  if (error) showToast('Could not load restaurants: ' + error.message);
 
-  if (error) {
-    showToast('Could not load restaurants: ' + error.message);
-    restaurants = [];
-  } else {
-    restaurants = data || [];
-  }
+  await loadFavData();
 
-  renderRestaurantList(restaurants);
+  renderChips('home-chips', activeCategory, setHomeCategory);
+  renderFeatured();
+  applyHomeFilters();
   showScreen('home-screen');
   updateNotificationBadge();
 }
 
-function renderRestaurantList(list) {
-  const container = document.getElementById('restaurant-list');
-  if (!list.length) {
-    container.innerHTML = '<div class="empty-state">No restaurants found yet.<br>Check back soon!</div>';
-    return;
-  }
-  container.innerHTML = list.map(r => `
-    <div class="rest-card" onclick="openDetail('${r.id}')">
-      <div class="rest-img" style="background:${r.bg_color || '#F0F0F0'};">${r.image_emoji || '🍴'}</div>
-      <div class="rest-info">
-        <div class="rest-name">${escapeHtml(r.name)}</div>
-        <div class="rest-row">
-          <span class="rest-tag">${escapeHtml(r.cuisine || '')}</span>
-          <span class="rest-rating">★ ${r.rating || '—'}</span>
-        </div>
-        <div style="margin-top:6px;"><span class="avail-dot"></span><span class="avail-text">Tap to view tables</span></div>
+// ----- category chips -----
+const CATEGORIES = ['All','Cafes','Restaurants','Burgers','Italian','Fine Dining'];
+const CATEGORY_KEYWORDS = {
+  'Cafes': ['cafe','café','coffee','brunch','breakfast','donut','bakery','dessert'],
+  'Restaurants': ['restaurant','kurdish','iraqi','turkish','grill','kebab','bbq','middle'],
+  'Burgers': ['burger','american','fast'],
+  'Italian': ['italian','pizza','pasta','trattoria'],
+  'Fine Dining': ['fine','steak','wine','lounge','sushi','japanese']
+};
+
+function matchCategory(r, cat) {
+  if (cat === 'All') return true;
+  const text = ((r.cuisine || '') + ' ' + (r.name || '')).toLowerCase();
+  return (CATEGORY_KEYWORDS[cat] || []).some(w => text.includes(w));
+}
+
+function renderChips(containerId, active, onClickName) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = CATEGORIES.map(cat =>
+    `<div class="chip ${cat === active ? 'active' : ''}" onclick="${onClickName}('${cat}')">${cat}</div>`
+  ).join('');
+}
+
+function setHomeCategory(cat) {
+  activeCategory = cat;
+  renderChips('home-chips', activeCategory, 'setHomeCategory');
+  applyHomeFilters();
+}
+
+function applyHomeFilters() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  const list = restaurants.filter(r =>
+    matchCategory(r, activeCategory) &&
+    (r.name.toLowerCase().includes(q) || (r.cuisine || '').toLowerCase().includes(q))
+  );
+  renderGrid('restaurant-list', list);
+}
+
+function filterRestaurants() { applyHomeFilters(); }
+
+function renderFeatured() {
+  const top = [...restaurants].sort((a,b) => (b.rating||0) - (a.rating||0)).slice(0, 8);
+  const row = document.getElementById('featured-row');
+  if (!top.length) { row.innerHTML = ''; return; }
+  row.innerHTML = top.map(r => `
+    <div class="feat-card" onclick="openDetail('${r.id}')">
+      <div class="feat-photo">
+        <img src="${photoFor(r)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="feat-emoji" style="display:none; background:${r.bg_color || '#EEE'};">${r.image_emoji || '🍴'}</div>
+      </div>
+      <div class="feat-info">
+        <div class="feat-name">${escapeHtml(r.name)}</div>
+        <div class="feat-meta">★ ${r.rating || '—'} · ${escapeHtml(r.cuisine || '')}</div>
       </div>
     </div>
   `).join('');
 }
 
-function filterRestaurants() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const filtered = restaurants.filter(r =>
-    r.name.toLowerCase().includes(q) || (r.cuisine || '').toLowerCase().includes(q)
-  );
-  renderRestaurantList(filtered);
+// ----- generic 2-column grid with photo + heart -----
+function renderGrid(containerId, list, opts) {
+  opts = opts || {};
+  const container = document.getElementById(containerId);
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${opts.empty || 'No restaurants found.'}</div>`;
+    return;
+  }
+  container.innerHTML = list.map(r => {
+    const fav = favSet.has(r.id);
+    const area = r.area || r.address || r.location || 'Erbil';
+    const extra = opts.removeFromList
+      ? `<div class="heart-btn active" data-fav="${r.id}" onclick="removeFromList('${opts.removeFromList}','${r.id}', event)" title="Remove">✕</div>`
+      : `<div class="heart-btn ${fav ? 'active' : ''}" data-fav="${r.id}" onclick="toggleFav('${r.id}', event)">${fav ? '♥' : '♡'}</div>`
+        + (opts.addToList ? `<div class="heart-btn" style="left:auto; right:8px; top:42px; color:var(--accent);" onclick="addToListPrompt('${r.id}', event)" title="Add to a list">＋</div>` : '');
+    return `
+      <div class="grid-card" onclick="openDetail('${r.id}')">
+        <div class="card-photo">
+          <img src="${photoFor(r)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div class="card-emoji" style="display:none; background:${r.bg_color || '#EEE'};">${r.image_emoji || '🍴'}</div>
+          <div class="star-badge">★ ${r.rating || '—'}</div>
+          ${extra}
+        </div>
+        <div class="card-info">
+          <div class="card-name">${escapeHtml(r.name)}</div>
+          <div class="card-cuisine">${escapeHtml(r.cuisine || 'Restaurant')}</div>
+          <div class="card-area">${escapeHtml(area)}</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function escapeHtml(str) {
@@ -813,9 +1069,243 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function goHome() {
-  selectedTableId = null; selectedTime = null; selectedDate = null; currentRestaurant = null;
-  loadHome();
+// ===== SEARCH TAB =====
+function openSearch() {
+  renderChips('search-chips', activeSearchCategory, 'setSearchCategory');
+  applySearchFilters();
+  showScreen('search-screen');
+}
+function setSearchCategory(cat) {
+  activeSearchCategory = cat;
+  renderChips('search-chips', activeSearchCategory, 'setSearchCategory');
+  applySearchFilters();
+}
+function filterSearch() { applySearchFilters(); }
+function applySearchFilters() {
+  const q = (document.getElementById('search-input2').value || '').toLowerCase();
+  const list = restaurants.filter(r =>
+    matchCategory(r, activeSearchCategory) &&
+    (r.name.toLowerCase().includes(q) || (r.cuisine || '').toLowerCase().includes(q))
+  );
+  renderGrid('search-list', list, { empty: 'No matches. Try another search.' });
+}
+
+// ===== FAVOURITES =====
+async function loadFavData() {
+  favSet = new Set(); allFavs = []; favLists = [];
+  if (!currentUser) return;
+  const { data: favs } = await sb.from('favourites').select('restaurant_id, list_id').eq('user_id', currentUser.id);
+  allFavs = favs || [];
+  allFavs.forEach(f => favSet.add(f.restaurant_id));
+  const { data: lists } = await sb.from('fav_lists').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true });
+  favLists = lists || [];
+}
+
+async function toggleFav(restId, ev) {
+  if (ev) ev.stopPropagation();
+  if (!currentUser) return;
+  if (favSet.has(restId)) {
+    await sb.from('favourites').delete().eq('user_id', currentUser.id).eq('restaurant_id', restId);
+    favSet.delete(restId);
+    allFavs = allFavs.filter(f => f.restaurant_id !== restId);
+    showToast('Removed from saved');
+  } else {
+    await sb.from('favourites').insert({ user_id: currentUser.id, restaurant_id: restId, list_id: null });
+    favSet.add(restId);
+    allFavs.push({ restaurant_id: restId, list_id: null });
+    showToast('Saved ♥');
+  }
+  document.querySelectorAll(`[data-fav="${restId}"]`).forEach(h => {
+    const on = favSet.has(restId);
+    h.classList.toggle('active', on);
+    if (h.textContent === '♥' || h.textContent === '♡') h.textContent = on ? '♥' : '♡';
+  });
+}
+
+function openSaved() {
+  document.getElementById('saved-title').textContent = 'Saved';
+  renderSaved();
+  showScreen('saved-screen');
+}
+
+function renderSaved() {
+  const c = document.getElementById('saved-content');
+  const listsHtml = favLists.map(l => {
+    const count = allFavs.filter(f => f.list_id === l.id).length;
+    return `
+      <div class="list-card" onclick="openList('${l.id}')">
+        <div class="list-emoji">📔</div>
+        <div>
+          <div class="list-name">${escapeHtml(l.name)}</div>
+          <div class="list-count">${count} place${count === 1 ? '' : 's'}</div>
+        </div>
+        <div class="list-del" onclick="deleteList('${l.id}', event)" title="Delete list">🗑</div>
+      </div>`;
+  }).join('');
+
+  const savedRests = restaurants.filter(r => favSet.has(r.id));
+  let html = `<button class="list-btn" onclick="createList()">＋ Create a list</button>`;
+  html += `<div class="section-label" style="padding-top:4px;">Your lists · قوائمك</div>`;
+  html += favLists.length ? listsHtml : `<div class="empty-state" style="padding:20px 24px;">No lists yet. Create one like "Date night".</div>`;
+  html += `<div class="section-label">All saved · المحفوظات</div>`;
+  if (savedRests.length) {
+    html += `<div class="rest-grid" id="saved-grid"></div>`;
+  } else {
+    html += `<div class="empty-state">No saved places yet.<br>Tap the ♡ on a restaurant to save it.</div>
+             <button class="explore-btn" onclick="navTo('home')">Explore restaurants</button>`;
+  }
+  c.innerHTML = html;
+  if (savedRests.length) renderGrid('saved-grid', savedRests, { addToList: true });
+}
+
+async function createList() {
+  const name = (prompt('Name your list (e.g. "Date night")') || '').trim();
+  if (!name) return;
+  const { error } = await sb.from('fav_lists').insert({ user_id: currentUser.id, name });
+  if (error) { showToast('Could not create list: ' + error.message); return; }
+  await loadFavData();
+  renderSaved();
+  showToast('List created');
+}
+
+async function deleteList(listId, ev) {
+  if (ev) ev.stopPropagation();
+  if (!confirm('Delete this list? (Saved places stay in "All saved".)')) return;
+  await sb.from('favourites').update({ list_id: null }).eq('user_id', currentUser.id).eq('list_id', listId);
+  const { error } = await sb.from('fav_lists').delete().eq('id', listId);
+  if (error) { showToast('Could not delete: ' + error.message); return; }
+  await loadFavData();
+  renderSaved();
+  showToast('List deleted');
+}
+
+function openList(listId) {
+  const list = favLists.find(l => l.id === listId);
+  if (!list) return;
+  document.getElementById('saved-title').textContent = list.name;
+  const restIds = new Set(allFavs.filter(f => f.list_id === listId).map(f => f.restaurant_id));
+  const rests = restaurants.filter(r => restIds.has(r.id));
+  const c = document.getElementById('saved-content');
+  let html = `<button class="list-btn" onclick="openSaved()" style="border-style:solid;">← Back to all lists</button>`;
+  html += `<div class="section-label">${escapeHtml(list.name)}</div>`;
+  if (rests.length) {
+    html += `<div class="rest-grid" id="list-grid"></div>`;
+  } else {
+    html += `<div class="empty-state">This list is empty.<br>Open "All saved" and use ＋ to add places here.</div>`;
+  }
+  c.innerHTML = html;
+  if (rests.length) renderGrid('list-grid', rests, { removeFromList: listId });
+  showScreen('saved-screen');
+}
+
+async function addToListPrompt(restId, ev) {
+  if (ev) ev.stopPropagation();
+  if (!favLists.length) { showToast('Create a list first'); return; }
+  const menu = favLists.map((l, i) => `${i + 1}. ${l.name}`).join('\n');
+  const pick = prompt('Add to which list?\n' + menu);
+  if (!pick) return;
+  const idx = parseInt(pick, 10) - 1;
+  const list = favLists[idx];
+  if (!list) { showToast('Invalid choice'); return; }
+  // avoid duplicate row in same list
+  const exists = allFavs.some(f => f.restaurant_id === restId && f.list_id === list.id);
+  if (exists) { showToast('Already in ' + list.name); return; }
+  const { error } = await sb.from('favourites').insert({ user_id: currentUser.id, restaurant_id: restId, list_id: list.id });
+  if (error) { showToast('Could not add: ' + error.message); return; }
+  allFavs.push({ restaurant_id: restId, list_id: list.id });
+  favSet.add(restId);
+  showToast('Added to ' + list.name);
+  renderSaved();
+}
+
+async function removeFromList(listId, restId, ev) {
+  if (ev) ev.stopPropagation();
+  await sb.from('favourites').delete().eq('user_id', currentUser.id).eq('restaurant_id', restId).eq('list_id', listId);
+  allFavs = allFavs.filter(f => !(f.restaurant_id === restId && f.list_id === listId));
+  showToast('Removed from list');
+  openList(listId);
+}
+
+// the "All saved" grid uses addToList -> wire a + button via card overlay
+// (renderGrid handles heart; for add-to-list we expose a long-press alternative via the heart's title)
+
+// ===== PROFILE =====
+function openProfile() { renderProfile(); showScreen('profile-screen'); }
+
+function renderProfile() {
+  const name = currentProfile?.full_name || currentUser.email.split('@')[0];
+  const initial = name.charAt(0).toUpperCase();
+  const isDark = document.body.classList.contains('dark');
+  const c = document.getElementById('profile-content');
+  c.innerHTML = `
+    <div class="profile-card">
+      <div class="profile-avatar">${escapeHtml(initial)}</div>
+      <div>
+        <div class="profile-name">${escapeHtml(name)}</div>
+        <div class="profile-email">${escapeHtml(currentUser.email)}</div>
+      </div>
+    </div>
+
+    <div class="prof-group">
+      <div class="prof-group-title">Rewards</div>
+      <div class="prof-list">
+        <div class="prof-row" onclick="comingSoon('Loyalty points')"><span class="pr-ic">⭐</span><span class="pr-label">Loyalty points</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="enterPromo()"><span class="pr-ic">🎟️</span><span class="pr-label">Promo code</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="referFriend()"><span class="pr-ic">🤝</span><span class="pr-label">Refer a friend</span><span class="pr-chev">›</span></div>
+      </div>
+    </div>
+
+    <div class="prof-group">
+      <div class="prof-group-title">Your activity</div>
+      <div class="prof-list">
+        <div class="prof-row" onclick="navTo('bookings')"><span class="pr-ic">📅</span><span class="pr-label">My bookings</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="navTo('saved')"><span class="pr-ic">❤️</span><span class="pr-label">Saved places</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="comingSoon('My reviews')"><span class="pr-ic">📝</span><span class="pr-label">My reviews</span><span class="pr-chev">›</span></div>
+      </div>
+    </div>
+
+    <div class="prof-group">
+      <div class="prof-group-title">About you</div>
+      <div class="prof-list">
+        <div class="prof-row" onclick="comingSoon('Personal details')"><span class="pr-ic">👤</span><span class="pr-label">Personal details</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="comingSoon('Manage followers')"><span class="pr-ic">👥</span><span class="pr-label">Manage followers</span><span class="pr-chev">›</span></div>
+        <div class="prof-row" onclick="toggleTheme()"><span class="pr-ic">🌙</span><span class="pr-label">Dark mode</span><div class="switch ${isDark ? 'on' : ''}" id="dark-switch"></div></div>
+      </div>
+    </div>
+
+    <div class="prof-group">
+      <div class="prof-group-title">Help center</div>
+      <div class="prof-list">
+        <div class="prof-row" onclick="getSupport()"><span class="pr-ic">💬</span><span class="pr-label">Get support</span><span class="pr-chev">›</span></div>
+      </div>
+    </div>
+
+    <div class="prof-group" style="margin-bottom:24px;">
+      <div class="prof-list">
+        <div class="prof-row logout" onclick="handleLogout()"><span class="pr-ic">⎋</span><span class="pr-label">Log out</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function enterPromo() {
+  const code = (prompt('Enter your promo code') || '').trim();
+  if (!code) return;
+  showToast('Promo "' + code + '" saved — discounts coming soon 🚧');
+}
+function referFriend() {
+  const link = window.location.origin + window.location.pathname;
+  const msg = 'Join me on Erbil Eats! Book restaurant tables across Erbil: ' + link;
+  if (navigator.share) {
+    navigator.share({ title: 'Erbil Eats', text: msg, url: link }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(() => showToast('Invite link copied!')).catch(() => showToast(link));
+  } else {
+    showToast(link);
+  }
+}
+function getSupport() {
+  showToast('Email us: ' + ADMIN_EMAIL);
 }
 
 // ===== DETAIL / TABLES =====
@@ -830,8 +1320,17 @@ async function openDetail(restaurantId) {
   document.getElementById('book-btn').disabled = true;
   document.getElementById('book-btn').textContent = 'Select a table to reserve';
 
+  // hero photo
+  const heroImg = document.getElementById('d-hero-img');
+  const heroEmoji = document.getElementById('d-hero-emoji');
+  heroEmoji.style.display = 'none';
+  heroEmoji.textContent = currentRestaurant.image_emoji || '🍴';
+  heroEmoji.style.background = currentRestaurant.bg_color || 'var(--card)';
+  heroImg.style.display = 'block';
+  heroImg.src = photoFor(currentRestaurant);
+
   document.getElementById('d-name').textContent = currentRestaurant.name;
-  document.getElementById('d-meta').textContent = `${currentRestaurant.cuisine || ''}  ★ ${currentRestaurant.rating || '—'}`;
+  document.getElementById('d-meta').textContent = `${currentRestaurant.cuisine || ''}  ·  ★ ${currentRestaurant.rating || '—'}`;
 
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('booking-date').value = today;
@@ -839,7 +1338,6 @@ async function openDetail(restaurantId) {
 
   showScreen('detail-screen');
 
-  // Load 360 tour if available
   const tourSection = document.getElementById('tour-section');
   const tourFrame = document.getElementById('tour-frame');
   if (currentRestaurant.tour_url && currentRestaurant.tour_url.trim()) {
@@ -850,48 +1348,40 @@ async function openDetail(restaurantId) {
     tourSection.style.display = 'none';
   }
 
-  // Load map
-  setTimeout(() => {
-    loadDetailMap();
-  }, 100);
-
+  setTimeout(() => { loadDetailMap(); }, 100);
   await loadTables();
 }
 
+function navBackFromDetail() {
+  navTo(MAIN_SCREENS.includes(lastMain) ? lastMain : 'home');
+}
+
 function loadDetailMap() {
+  const mapContainer = document.getElementById('detail-map');
   if (!currentRestaurant.latitude || !currentRestaurant.longitude) {
-    document.getElementById('detail-map').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; background:#E8F0E4; color:#3B6D11; font-size:13px;">📍 Location data not available</div>';
+    mapContainer.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:13px;">📍 Location data not available</div>';
     return;
   }
-
-  const mapContainer = document.getElementById('detail-map');
   mapContainer.innerHTML = '';
-
   try {
     const map = L.map(mapContainer).setView([currentRestaurant.latitude, currentRestaurant.longitude], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19
+      attribution: '© OpenStreetMap contributors', maxZoom: 19
     }).addTo(map);
-
     L.marker([currentRestaurant.latitude, currentRestaurant.longitude])
       .bindPopup(`<strong>${escapeHtml(currentRestaurant.name)}</strong><br>${escapeHtml(currentRestaurant.cuisine || '')}`)
-      .addTo(map)
-      .openPopup();
+      .addTo(map).openPopup();
   } catch (err) {
-    mapContainer.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; background:#E8F0E4; color:#3B6D11; font-size:13px;">Map loading failed</div>';
+    mapContainer.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:13px;">Map loading failed</div>';
   }
 }
 
 async function loadTables() {
   const grid = document.getElementById('table-grid');
-  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#9A9590; font-size:12px;">Loading tables...</div>';
+  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted); font-size:12px;">Loading tables...</div>';
 
   const { data: tables, error: tablesError } = await sb
-    .from('restaurant_tables')
-    .select('*')
-    .eq('restaurant_id', currentRestaurant.id)
-    .order('table_number');
+    .from('restaurant_tables').select('*').eq('restaurant_id', currentRestaurant.id).order('table_number');
 
   if (tablesError) {
     grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#A32D2D; font-size:12px;">Could not load tables.</div>';
@@ -900,21 +1390,16 @@ async function loadTables() {
 
   const dateToCheck = selectedDate || new Date().toISOString().split('T')[0];
   const { data: existingBookings } = await sb
-    .from('reservations')
-    .select('table_id, reservation_time')
-    .eq('restaurant_id', currentRestaurant.id)
-    .eq('reservation_date', dateToCheck)
-    .neq('status', 'cancelled');
+    .from('reservations').select('table_id, reservation_time')
+    .eq('restaurant_id', currentRestaurant.id).eq('reservation_date', dateToCheck).neq('status', 'cancelled');
 
   const bookedTableIds = new Set();
   (existingBookings || []).forEach(b => {
-    if (!selectedTime || b.reservation_time === selectedTime) {
-      bookedTableIds.add(b.table_id);
-    }
+    if (!selectedTime || b.reservation_time === selectedTime) bookedTableIds.add(b.table_id);
   });
 
   if (!tables || !tables.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#9A9590; font-size:12px;">No tables set up for this restaurant yet.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted); font-size:12px;">No tables set up for this restaurant yet.</div>';
     return;
   }
 
@@ -936,8 +1421,7 @@ document.getElementById('booking-date').addEventListener('change', async (e) => 
 });
 
 function selectTable(id, number) {
-  selectedTableId = id;
-  selectedTableNumber = number;
+  selectedTableId = id; selectedTableNumber = number;
   document.querySelectorAll('.table-cell.selected').forEach(c => c.classList.remove('selected'));
   loadTables();
   updateBookBtn();
@@ -951,12 +1435,7 @@ function selectGuests(el, count) {
 
 function selectTimeFromPicker() {
   const timeValue = document.getElementById('booking-time').value;
-  if (!timeValue) {
-    selectedTime = null;
-    updateBookBtn();
-    return;
-  }
-  // Convert 24-hour (e.g. "19:30") to 12-hour (e.g. "7:30 PM")
+  if (!timeValue) { selectedTime = null; updateBookBtn(); return; }
   const [hours, minutes] = timeValue.split(':');
   const h = parseInt(hours);
   const ampm = h >= 12 ? 'PM' : 'AM';
@@ -973,17 +1452,13 @@ function updateBookBtn() {
     btn.disabled = false;
     btn.textContent = `Continue with ${selectedTableNumber} · ${selectedTime}`;
   } else if (selectedTableId) {
-    btn.disabled = true;
-    btn.textContent = 'Now pick a time';
+    btn.disabled = true; btn.textContent = 'Now pick a time';
   } else {
-    btn.disabled = true;
-    btn.textContent = 'Select a table to reserve';
+    btn.disabled = true; btn.textContent = 'Select a table to reserve';
   }
 }
 
 // ===== PAYMENT =====
-let paymentMethod = 'cash';
-
 function goToPayment() {
   document.getElementById('p-rest').textContent = currentRestaurant.name;
   document.getElementById('p-table').textContent = `${selectedTableNumber} · ${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
@@ -992,52 +1467,35 @@ function goToPayment() {
   showScreen('payment-screen');
 }
 
-function backToDetail() {
-  showScreen('detail-screen');
-}
+function backToDetail() { showScreen('detail-screen'); }
 
 async function confirmBooking() {
   const btn = document.getElementById('pay-btn');
-  btn.disabled = true;
-  btn.textContent = 'Processing...';
-
+  btn.disabled = true; btn.textContent = 'Processing...';
   try {
     const { error } = await sb.from('reservations').insert({
-      user_id: currentUser.id,
-      table_id: selectedTableId,
-      restaurant_id: currentRestaurant.id,
-      reservation_date: selectedDate,
-      reservation_time: selectedTime,
-      guest_count: selectedGuests,
-      payment_method: 'cash',
-      payment_status: 'pending',
-      status: 'confirmed'
+      user_id: currentUser.id, table_id: selectedTableId, restaurant_id: currentRestaurant.id,
+      reservation_date: selectedDate, reservation_time: selectedTime, guest_count: selectedGuests,
+      payment_method: 'cash', payment_status: 'pending', status: 'confirmed'
     });
-
     if (error) throw error;
 
     document.getElementById('c-rest').textContent = currentRestaurant.name;
     document.getElementById('c-table').textContent = selectedTableNumber;
     document.getElementById('c-time').textContent = `${selectedTime} · ${selectedDate}`;
     document.getElementById('c-payment').textContent = '1,000 IQD · Cash at door';
-
     document.getElementById('s-title').textContent = 'Table reserved!';
     document.getElementById('s-sub').textContent = 'Pay 1,000 IQD when you arrive. Table held for 15 min.';
-
     showScreen('success-screen');
-
-    // Send confirmation emails (don't block the UI if it fails)
     sendBookingEmails();
   } catch (err) {
     showToast('Booking failed: ' + err.message);
-    btn.disabled = false;
-    btn.textContent = 'Reserve & pay at door';
+    btn.disabled = false; btn.textContent = 'Reserve & pay at door';
   }
 }
 
 async function notifyAdminOfSignup(name, email, role, restaurantName) {
   try {
-    const ADMIN_EMAIL = 'abbassaadoon7@gmail.com';  // Your email
     const roleLabel = role === 'restaurant_owner' ? '🍴 Restaurant Owner' : '🧑 Customer';
     const html = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #F7F5F2;">
@@ -1051,18 +1509,11 @@ async function notifyAdminOfSignup(name, email, role, restaurantName) {
         </div>
         ${role === 'restaurant_owner' ? '<p style="color: #BA7517; font-size: 13px;">⚠️ This owner needs your approval in the admin panel.</p>' : ''}
         <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
-      </div>
-    `;
+      </div>`;
     await sb.functions.invoke('send-email', {
-      body: {
-        to: ADMIN_EMAIL,
-        subject: `New ${role === 'restaurant_owner' ? 'owner' : 'customer'} signup: ${name}`,
-        html: html
-      }
+      body: { to: ADMIN_EMAIL, subject: `New ${role === 'restaurant_owner' ? 'owner' : 'customer'} signup: ${name}`, html }
     });
-  } catch (err) {
-    console.log('Admin notification failed (non-critical):', err);
-  }
+  } catch (err) { console.log('Admin notification failed (non-critical):', err); }
 }
 
 async function sendBookingEmails() {
@@ -1070,8 +1521,6 @@ async function sendBookingEmails() {
     const customerEmail = currentUser.email;
     const customerName = currentProfile?.full_name || 'Customer';
     const restName = currentRestaurant.name;
-
-    // Customer confirmation email
     const customerHtml = `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #F7F5F2;">
         <h2 style="color: #2C2C2A;">🍽️ Booking Confirmed!</h2>
@@ -1085,47 +1534,11 @@ async function sendBookingEmails() {
         </div>
         <p style="color: #9A9590; font-size: 13px;">Please arrive on time. Your table is held for 15 minutes.</p>
         <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
-      </div>
-    `;
-
+      </div>`;
     await sb.functions.invoke('send-email', {
-      body: {
-        to: customerEmail,
-        subject: `Booking confirmed at ${restName}`,
-        html: customerHtml
-      }
+      body: { to: customerEmail, subject: `Booking confirmed at ${restName}`, html: customerHtml }
     });
-
-    // Owner notification email (look up the owner's email)
-    const { data: ownerProfile } = await sb
-      .from('profiles')
-      .select('id')
-      .eq('restaurant_id', currentRestaurant.id)
-      .eq('role', 'restaurant_owner')
-      .eq('approval_status', 'approved')
-      .limit(1)
-      .single();
-
-    if (ownerProfile) {
-      const ownerHtml = `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #F7F5F2;">
-          <h2 style="color: #2C2C2A;">📅 New Booking!</h2>
-          <p style="color: #5F5E5A;">You have a new reservation at ${restName}.</p>
-          <div style="background: #fff; border-radius: 12px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 6px 0; color: #2C2C2A;"><strong>Customer:</strong> ${customerName}</p>
-            <p style="margin: 6px 0; color: #2C2C2A;"><strong>Table:</strong> ${selectedTableNumber}</p>
-            <p style="margin: 6px 0; color: #2C2C2A;"><strong>Date:</strong> ${selectedDate}</p>
-            <p style="margin: 6px 0; color: #2C2C2A;"><strong>Time:</strong> ${selectedTime}</p>
-          </div>
-          <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
-        </div>
-      `;
-      // Note: owner email lookup requires admin access to auth.users
-      // For now, owner sees bookings in their dashboard
-    }
-  } catch (err) {
-    console.log('Email sending failed (non-critical):', err);
-  }
+  } catch (err) { console.log('Email sending failed (non-critical):', err); }
 }
 
 // ===== MY BOOKINGS =====
@@ -1136,24 +1549,21 @@ async function openMyBookings() {
 
   const { data, error } = await sb
     .from('reservations')
-    .select('*, restaurants(name, image_emoji, bg_color), restaurant_tables(table_number)')
+    .select('*, restaurants(name, image_emoji, bg_color, cuisine, photo_url), restaurant_tables(table_number)')
     .eq('user_id', currentUser.id)
     .order('reservation_date', { ascending: false })
     .order('reservation_time', { ascending: false });
 
-  if (error) {
-    container.innerHTML = '<div class="empty-state">Could not load bookings.</div>';
-    return;
-  }
+  if (error) { container.innerHTML = '<div class="empty-state">Could not load bookings.</div>'; return; }
 
   if (!data || !data.length) {
-    container.innerHTML = '<div class="empty-state">No bookings yet.<br>Book a table to see it here!</div>';
+    container.innerHTML = `<div class="empty-state">No bookings yet.<br>Book a table to see it here!</div>
+      <button class="explore-btn" onclick="navTo('home')">Explore restaurants</button>`;
     return;
   }
 
   const today = new Date().toISOString().split('T')[0];
-
-  container.innerHTML = data.map(b => {
+  const cards = data.map(b => {
     const restName = b.restaurants?.name || 'Restaurant';
     const emoji = b.restaurants?.image_emoji || '🍴';
     const bgColor = b.restaurants?.bg_color || '#F0F0F0';
@@ -1161,12 +1571,10 @@ async function openMyBookings() {
     const isCancelled = b.status === 'cancelled';
     const isPast = b.reservation_date < today;
     const canCancel = !isCancelled && !isPast;
-
     let statusLabel = '';
     if (isCancelled) statusLabel = '<span class="status-pill cancelled">Cancelled</span>';
-    else if (isPast) statusLabel = '<span class="status-pill" style="background:#F1EFE8; color:#9A9590;">Completed</span>';
+    else if (isPast) statusLabel = '<span class="status-pill" style="background:var(--border); color:var(--muted);">Completed</span>';
     else statusLabel = '<span class="status-pill confirmed">Upcoming</span>';
-
     return `
       <div class="booking-card" style="margin-top:10px;">
         <div class="booking-top">
@@ -1175,7 +1583,7 @@ async function openMyBookings() {
             <div>
               <div class="booking-name">${escapeHtml(restName)}</div>
               <div class="booking-detail">Table ${escapeHtml(tableNum)} · ${b.guest_count || 2} guests</div>
-              <div class="booking-detail">${b.payment_method === 'online' ? '💳 Paid online' : '💵 Pay at door'}</div>
+              <div class="booking-detail">💵 Pay at door</div>
             </div>
           </div>
           <div>
@@ -1187,19 +1595,16 @@ async function openMyBookings() {
           ${statusLabel}
           ${canCancel ? `<button class="btn-decline" style="flex:0 0 auto; padding:6px 16px;" onclick="cancelMyBooking('${b.id}')">Cancel</button>` : ''}
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
+
+  container.innerHTML = cards + `<button class="explore-btn" onclick="navTo('home')">Explore restaurants</button>`;
 }
 
 async function cancelMyBooking(reservationId) {
   if (!confirm('Cancel this reservation?')) return;
-  
   const { error } = await sb.from('reservations').update({ status: 'cancelled' }).eq('id', reservationId);
-  if (error) {
-    showToast('Could not cancel: ' + error.message);
-    return;
-  }
+  if (error) { showToast('Could not cancel: ' + error.message); return; }
   showToast('Reservation cancelled');
   openMyBookings();
 }
@@ -1207,19 +1612,10 @@ async function cancelMyBooking(reservationId) {
 // ===== NOTIFICATIONS =====
 async function openNotifications() {
   const { data } = await sb
-    .from('reservations')
-    .select('*, restaurants(name), restaurant_tables(table_number)')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false })
-    .limit(10);
-
-  if (!data || !data.length) {
-    showToast('No notifications yet');
-    return;
-  }
-
+    .from('reservations').select('*, restaurants(name), restaurant_tables(table_number)')
+    .eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(10);
+  if (!data || !data.length) { showToast('No notifications yet'); return; }
   const upcoming = data.filter(b => b.status === 'confirmed' && b.reservation_date >= new Date().toISOString().split('T')[0]);
-  
   if (upcoming.length > 0) {
     const next = upcoming[upcoming.length - 1];
     showToast(`📅 Upcoming: ${next.restaurants?.name} on ${next.reservation_date} at ${next.reservation_time}`);
@@ -1231,16 +1627,12 @@ async function openNotifications() {
 async function updateNotificationBadge() {
   if (!currentUser) return;
   const { data } = await sb
-    .from('reservations')
-    .select('id, status, reservation_date')
-    .eq('user_id', currentUser.id)
-    .eq('status', 'confirmed')
+    .from('reservations').select('id, status, reservation_date')
+    .eq('user_id', currentUser.id).eq('status', 'confirmed')
     .gte('reservation_date', new Date().toISOString().split('T')[0]);
-
   const badge = document.getElementById('notif-badge');
   if (badge && data && data.length > 0) {
-    badge.textContent = data.length;
-    badge.style.display = 'flex';
+    badge.textContent = data.length; badge.style.display = 'flex';
   } else if (badge) {
     badge.style.display = 'none';
   }
@@ -1250,9 +1642,8 @@ async function updateNotificationBadge() {
 let activeAdminTab = 'pending';
 
 async function loadAdminDashboard() {
-  showScreen('loading-screen');
-  activeAdminTab = 'pending';
   showScreen('admin-screen');
+  activeAdminTab = 'pending';
   switchAdminTab('pending');
 }
 
@@ -1267,24 +1658,14 @@ function switchAdminTab(tab) {
 async function renderPendingOwners() {
   const container = document.getElementById('admin-content');
   container.innerHTML = '<div class="empty-state">Loading...</div>';
-
   const { data: pending, error } = await sb
-    .from('profiles')
-    .select('*, restaurants(name)')
-    .eq('role', 'restaurant_owner')
-    .eq('approval_status', 'pending')
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    container.innerHTML = '<div class="empty-state">Could not load pending owners.</div>';
-    return;
-  }
-
+    .from('profiles').select('*, restaurants(name)')
+    .eq('role', 'restaurant_owner').eq('approval_status', 'pending').order('created_at', { ascending: true });
+  if (error) { container.innerHTML = '<div class="empty-state">Could not load pending owners.</div>'; return; }
   if (!pending || !pending.length) {
     container.innerHTML = '<div class="empty-state" style="padding:60px 24px;">No pending owner requests.<br>They\'ll appear here when restaurant owners sign up.</div>';
     return;
   }
-
   container.innerHTML = pending.map(p => `
     <div class="booking-card">
       <div class="booking-top">
@@ -1292,53 +1673,28 @@ async function renderPendingOwners() {
           <div class="booking-name">${escapeHtml(p.full_name)}</div>
           <div class="booking-detail">${escapeHtml(p.restaurants?.name || 'Unknown restaurant')}</div>
         </div>
-        <div>
-          <div class="booking-time" style="color:#BA7517;">Pending</div>
-        </div>
+        <div><div class="booking-time" style="color:var(--accent);">Pending</div></div>
       </div>
       <div class="booking-actions">
         <button class="btn-accept" onclick="approveOwner('${p.id}')">Approve</button>
         <button class="btn-decline" onclick="rejectOwner('${p.id}')">Reject</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 async function renderAllUsers() {
   const container = document.getElementById('admin-content');
   container.innerHTML = '<div class="empty-state">Loading users...</div>';
-
-  const { data: users, error } = await sb
-    .from('profiles')
-    .select('*, restaurants(name)')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    container.innerHTML = '<div class="empty-state">Could not load users.</div>';
-    return;
-  }
-
-  if (!users || !users.length) {
-    container.innerHTML = '<div class="empty-state">No users yet.</div>';
-    return;
-  }
-
+  const { data: users, error } = await sb.from('profiles').select('*, restaurants(name)').order('created_at', { ascending: false });
+  if (error) { container.innerHTML = '<div class="empty-state">Could not load users.</div>'; return; }
+  if (!users || !users.length) { container.innerHTML = '<div class="empty-state">No users yet.</div>'; return; }
   const customerCount = users.filter(u => u.role === 'customer').length;
   const ownerCount = users.filter(u => u.role === 'restaurant_owner').length;
-
   const statsHtml = `
     <div class="stats-row" style="padding-top:14px;">
-      <div class="stat-card">
-        <div class="stat-label">Total users</div>
-        <div class="stat-val">${users.length}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Customers · Owners</div>
-        <div class="stat-val" style="font-size:18px;">${customerCount} · ${ownerCount}</div>
-      </div>
-    </div>
-  `;
-
+      <div class="stat-card"><div class="stat-label">Total users</div><div class="stat-val">${users.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Customers · Owners</div><div class="stat-val" style="font-size:18px;">${customerCount} · ${ownerCount}</div></div>
+    </div>`;
   const usersHtml = users.map(u => {
     const roleIcon = u.role === 'restaurant_owner' ? '🍴' : '🧑';
     const roleLabel = u.role === 'restaurant_owner' ? 'Owner' : 'Customer';
@@ -1349,7 +1705,6 @@ async function renderAllUsers() {
       else if (u.approval_status === 'pending') statusBadge = '<span class="status-pill" style="background:#FAEEDA; color:#BA7517;">Pending</span>';
       else if (u.approval_status === 'rejected') statusBadge = '<span class="status-pill cancelled">Rejected</span>';
     }
-
     return `
       <div class="booking-card">
         <div class="booking-top">
@@ -1359,33 +1714,23 @@ async function renderAllUsers() {
             ${u.phone ? '<div class="booking-detail">📞 ' + escapeHtml(u.phone) + '</div>' : ''}
             ${statusBadge ? '<div style="margin-top:6px;">' + statusBadge + '</div>' : ''}
           </div>
-          <div>
-            <div class="booking-date-sub">${joinDate}</div>
-          </div>
+          <div><div class="booking-date-sub">${joinDate}</div></div>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
-
   container.innerHTML = statsHtml + usersHtml;
 }
 
 async function approveOwner(userId) {
   const { error } = await sb.from('profiles').update({ approval_status: 'approved' }).eq('id', userId);
-  if (error) {
-    showToast('Could not approve: ' + error.message);
-    return;
-  }
+  if (error) { showToast('Could not approve: ' + error.message); return; }
   showToast('Owner approved!');
   renderPendingOwners();
 }
 
 async function rejectOwner(userId) {
   const { error } = await sb.from('profiles').update({ approval_status: 'rejected' }).eq('id', userId);
-  if (error) {
-    showToast('Could not reject: ' + error.message);
-    return;
-  }
+  if (error) { showToast('Could not reject: ' + error.message); return; }
   showToast('Owner rejected');
   renderPendingOwners();
 }
@@ -1401,15 +1746,10 @@ async function loadOwnerDashboard(profile) {
     showScreen('auth-screen');
     return;
   }
-
   const { data: rest, error: restError } = await sb.from('restaurants').select('*').eq('id', profile.restaurant_id).single();
-  if (restError || !rest) {
-    showToast('Could not load your restaurant.');
-    return;
-  }
+  if (restError || !rest) { showToast('Could not load your restaurant.'); return; }
   ownerRestaurant = rest;
   document.getElementById('owner-rest-name').textContent = rest.name;
-
   await refreshOwnerBookings();
   activeOwnerTab = 'bookings';
   switchOwnerTab('bookings');
@@ -1418,45 +1758,28 @@ async function loadOwnerDashboard(profile) {
 
 async function refreshOwnerBookings() {
   const { data, error } = await sb
-    .from('reservations')
-    .select('*, profiles(full_name, phone), restaurant_tables(table_number)')
+    .from('reservations').select('*, profiles(full_name, phone), restaurant_tables(table_number)')
     .eq('restaurant_id', ownerRestaurant.id)
-    .order('reservation_date', { ascending: false })
-    .order('reservation_time', { ascending: true });
-
-  if (error) {
-    showToast('Could not load bookings: ' + error.message);
-    ownerBookings = [];
-  } else {
-    ownerBookings = data || [];
-  }
+    .order('reservation_date', { ascending: false }).order('reservation_time', { ascending: true });
+  ownerBookings = error ? [] : (data || []);
+  if (error) showToast('Could not load bookings: ' + error.message);
 
   const today = new Date().toISOString().split('T')[0];
   const todayBookings = ownerBookings.filter(b => b.reservation_date === today && b.status !== 'cancelled');
   document.getElementById('owner-today-count').textContent = todayBookings.length;
 
-  // Update the red badge on the Bookings tab
   const badge = document.getElementById('owner-booking-badge');
   if (badge) {
-    if (todayBookings.length > 0) {
-      badge.textContent = todayBookings.length;
-      badge.style.display = 'flex';
-    } else {
-      badge.style.display = 'none';
-    }
+    if (todayBookings.length > 0) { badge.textContent = todayBookings.length; badge.style.display = 'flex'; }
+    else badge.style.display = 'none';
   }
-
   const paidBookings = ownerBookings.filter(b => b.payment_status === 'paid' || b.status === 'confirmed');
-  const revenue = paidBookings.length * 1000;
-  document.getElementById('owner-revenue').textContent = revenue.toLocaleString() + ' IQD';
+  document.getElementById('owner-revenue').textContent = (paidBookings.length * 1000).toLocaleString() + ' IQD';
 }
 
 function switchOwnerTab(tab) {
   activeOwnerTab = tab;
-  ['bookings','info','stats'].forEach(t => {
-    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-  });
-
+  ['bookings','info','stats'].forEach(t => document.getElementById('tab-' + t).classList.toggle('active', t === tab));
   if (tab === 'bookings') renderOwnerBookings();
   else if (tab === 'info') renderOwnerInfo();
   else if (tab === 'stats') renderOwnerStats();
@@ -1468,7 +1791,6 @@ function renderOwnerBookings() {
     container.innerHTML = '<div class="empty-state">No bookings yet.<br>They\'ll show up here as customers reserve.</div>';
     return;
   }
-
   container.innerHTML = ownerBookings.map(b => {
     const customerName = b.profiles?.full_name || 'Customer';
     const customerPhone = b.profiles?.phone || '';
@@ -1483,7 +1805,7 @@ function renderOwnerBookings() {
             <div class="booking-name">${escapeHtml(customerName)}</div>
             ${customerPhone ? '<div class="booking-detail">📞 ' + escapeHtml(customerPhone) + '</div>' : ''}
             <div class="booking-detail">${b.guest_count || 2} guests · Table ${escapeHtml(tableNum)}</div>
-            <div class="booking-detail">${b.payment_method === 'online' ? '💳 Paid online' : '💵 Pay at door'}</div>
+            <div class="booking-detail">💵 Pay at door</div>
           </div>
           <div>
             <div class="booking-time">${escapeHtml(b.reservation_time)}</div>
@@ -1499,17 +1821,13 @@ function renderOwnerBookings() {
               </div>`
             : '<div style="margin-top:8px;"><span class="status-pill confirmed">Confirmed</span></div>'
         }
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
 async function updateBookingStatus(reservationId, newStatus) {
   const { error } = await sb.from('reservations').update({ status: newStatus }).eq('id', reservationId);
-  if (error) {
-    showToast('Could not update booking: ' + error.message);
-    return;
-  }
+  if (error) { showToast('Could not update booking: ' + error.message); return; }
   showToast(newStatus === 'confirmed' ? 'Booking accepted' : 'Booking declined');
   await refreshOwnerBookings();
   renderOwnerBookings();
@@ -1519,28 +1837,12 @@ function renderOwnerInfo() {
   const container = document.getElementById('owner-content');
   container.innerHTML = `
     <div class="owner-section-title">Restaurant details</div>
-    <div class="info-field">
-      <label>Name</label>
-      <input id="info-name" value="${escapeHtml(ownerRestaurant.name)}">
-    </div>
-    <div class="info-field">
-      <label>Cuisine type</label>
-      <input id="info-cuisine" value="${escapeHtml(ownerRestaurant.cuisine || '')}">
-    </div>
-    <div class="info-field">
-      <label>Address</label>
-      <input id="info-address" value="${escapeHtml(ownerRestaurant.address || '')}">
-    </div>
-    <div class="info-field">
-      <label>360° Tour link (paste from Kuula/CloudPano)</label>
-      <input id="info-tour" value="${escapeHtml(ownerRestaurant.tour_url || '')}" placeholder="https://kuula.co/share/...">
-    </div>
-    <div class="info-field">
-      <label>Active (visible to customers)</label>
-      <input id="info-active" type="checkbox" ${ownerRestaurant.is_active ? 'checked' : ''} style="width:auto;">
-    </div>
-    <button class="save-info-btn" onclick="saveOwnerInfo()">Save changes</button>
-  `;
+    <div class="info-field"><label>Name</label><input id="info-name" value="${escapeHtml(ownerRestaurant.name)}"></div>
+    <div class="info-field"><label>Cuisine type</label><input id="info-cuisine" value="${escapeHtml(ownerRestaurant.cuisine || '')}"></div>
+    <div class="info-field"><label>Address</label><input id="info-address" value="${escapeHtml(ownerRestaurant.address || '')}"></div>
+    <div class="info-field"><label>360° Tour link (paste from Kuula/CloudPano)</label><input id="info-tour" value="${escapeHtml(ownerRestaurant.tour_url || '')}" placeholder="https://kuula.co/share/..."></div>
+    <div class="info-field"><label>Active (visible to customers)</label><input id="info-active" type="checkbox" ${ownerRestaurant.is_active ? 'checked' : ''} style="width:auto;"></div>
+    <button class="save-info-btn" onclick="saveOwnerInfo()">Save changes</button>`;
 }
 
 async function saveOwnerInfo() {
@@ -1549,26 +1851,11 @@ async function saveOwnerInfo() {
   const address = document.getElementById('info-address').value.trim();
   const tourUrl = document.getElementById('info-tour').value.trim();
   const isActive = document.getElementById('info-active').checked;
-
-  if (!name) {
-    showToast('Restaurant name cannot be empty.');
-    return;
-  }
-
-  const { error } = await sb.from('restaurants').update({
-    name, cuisine, address, tour_url: tourUrl, is_active: isActive
-  }).eq('id', ownerRestaurant.id);
-
-  if (error) {
-    showToast('Could not save: ' + error.message);
-    return;
-  }
-
-  ownerRestaurant.name = name;
-  ownerRestaurant.cuisine = cuisine;
-  ownerRestaurant.address = address;
-  ownerRestaurant.tour_url = tourUrl;
-  ownerRestaurant.is_active = isActive;
+  if (!name) { showToast('Restaurant name cannot be empty.'); return; }
+  const { error } = await sb.from('restaurants').update({ name, cuisine, address, tour_url: tourUrl, is_active: isActive }).eq('id', ownerRestaurant.id);
+  if (error) { showToast('Could not save: ' + error.message); return; }
+  ownerRestaurant.name = name; ownerRestaurant.cuisine = cuisine; ownerRestaurant.address = address;
+  ownerRestaurant.tour_url = tourUrl; ownerRestaurant.is_active = isActive;
   document.getElementById('owner-rest-name').textContent = name;
   showToast('Restaurant info saved');
 }
@@ -1578,32 +1865,31 @@ function renderOwnerStats() {
   const total = ownerBookings.length;
   const confirmed = ownerBookings.filter(b => b.status === 'confirmed').length;
   const cancelled = ownerBookings.filter(b => b.status === 'cancelled').length;
-  const onlinePay = ownerBookings.filter(b => b.payment_method === 'online').length;
   const cashPay = ownerBookings.filter(b => b.payment_method === 'cash').length;
-
   const timeSlots = {};
-  ownerBookings.forEach(b => {
-    timeSlots[b.reservation_time] = (timeSlots[b.reservation_time] || 0) + 1;
-  });
+  ownerBookings.forEach(b => { timeSlots[b.reservation_time] = (timeSlots[b.reservation_time] || 0) + 1; });
   const topTime = Object.entries(timeSlots).sort((a, b) => b[1] - a[1])[0];
-
   container.innerHTML = `
     <div class="owner-section-title">Overview</div>
-    <div class="info-field"><label>Total bookings (all time)</label><div style="font-size:18px; font-weight:500; color:#2C2C2A;">${total}</div></div>
-    <div class="info-field"><label>Confirmed</label><div style="font-size:18px; font-weight:500; color:#3B6D11;">${confirmed}</div></div>
-    <div class="info-field"><label>Cancelled</label><div style="font-size:18px; font-weight:500; color:#A32D2D;">${cancelled}</div></div>
-    <div class="info-field"><label>Payment split</label><div style="font-size:13px; color:#2C2C2A;">💳 ${onlinePay} online · 💵 ${cashPay} cash</div></div>
-    <div class="info-field"><label>Most popular time</label><div style="font-size:13px; color:#2C2C2A;">${topTime ? escapeHtml(topTime[0]) + ' (' + topTime[1] + ' bookings)' : 'Not enough data yet'}</div></div>
-  `;
+    <div class="info-field"><label>Total bookings (all time)</label><div style="font-size:18px; font-weight:600; color:var(--text);">${total}</div></div>
+    <div class="info-field"><label>Confirmed</label><div style="font-size:18px; font-weight:600; color:var(--good-text);">${confirmed}</div></div>
+    <div class="info-field"><label>Cancelled</label><div style="font-size:18px; font-weight:600; color:#A32D2D;">${cancelled}</div></div>
+    <div class="info-field"><label>Estimated revenue</label><div style="font-size:18px; font-weight:600; color:var(--text);">${(confirmed * 1000).toLocaleString()} IQD</div></div>
+    <div class="info-field"><label>Payments</label><div style="font-size:13px; color:var(--text);">💵 ${cashPay} cash bookings</div></div>
+    <div class="info-field"><label>Most popular time</label><div style="font-size:13px; color:var(--text);">${topTime ? escapeHtml(topTime[0]) + ' (' + topTime[1] + ' bookings)' : 'Not enough data yet'}</div></div>`;
 }
 
 // ===== CLOCK =====
 function updateClock() {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  document.getElementById('clock').textContent = timeStr;
+  const clock = document.getElementById('clock');
+  if (clock) clock.textContent = timeStr;
+  document.querySelectorAll('.clock-slot').forEach(c => c.textContent = timeStr);
   const ownerClock = document.getElementById('owner-clock');
   if (ownerClock) ownerClock.textContent = timeStr;
+  const adminClock = document.getElementById('admin-clock');
+  if (adminClock) adminClock.textContent = timeStr;
 }
 setInterval(updateClock, 30000);
 updateClock();
