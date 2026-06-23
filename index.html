@@ -1323,6 +1323,13 @@ function renderProfile() {
     </div>
 
     <div class="prof-group">
+      <div class="prof-group-title">Friends</div>
+      <div class="prof-list">
+        <div class="prof-row" onclick="openFriends()"><span class="pr-ic">👥</span><span class="pr-label">Find &amp; add friends</span><span class="pr-chev">›</span></div>
+      </div>
+    </div>
+
+    <div class="prof-group">
       <div class="prof-group-title">Rewards</div>
       <div class="prof-list">
         <div class="prof-row" onclick="comingSoon('Loyalty points')"><span class="pr-ic">⭐</span><span class="pr-label">Loyalty points</span><span class="pr-chev">›</span></div>
@@ -1344,7 +1351,6 @@ function renderProfile() {
       <div class="prof-group-title">About you</div>
       <div class="prof-list">
         <div class="prof-row" onclick="comingSoon('Personal details')"><span class="pr-ic">👤</span><span class="pr-label">Personal details</span><span class="pr-chev">›</span></div>
-        <div class="prof-row" onclick="openFriends()"><span class="pr-ic">👥</span><span class="pr-label">Friends</span><span class="pr-chev">›</span></div>
         <div class="prof-row" onclick="toggleTheme()"><span class="pr-ic">🌙</span><span class="pr-label">Dark mode</span><div class="switch ${isDark ? 'on' : ''}" id="dark-switch"></div></div>
       </div>
     </div>
