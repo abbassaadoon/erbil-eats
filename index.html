@@ -677,7 +677,15 @@
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://nbarrdiilyjqgszjztgs.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_HMtgzyJ9VLsJhlVRbawgoA_kI_7eiM2';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,      // keep the user logged in across app restarts
+    autoRefreshToken: true,    // silently refresh the token so it never expires on them
+    detectSessionInUrl: true,  // needed to complete Google sign-in redirects
+    storage: window.localStorage,
+    storageKey: 'erbil-eats-auth'
+  }
+});
 
 const ADMIN_USER_ID = '30997342-e713-433e-abec-15b92432a24e';  // Abbas (admin)
 const ADMIN_EMAIL = 'abbassaadoon7@gmail.com';
