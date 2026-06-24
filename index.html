@@ -348,6 +348,23 @@
   body.dark .wheel-band { border-color: var(--accent); background: rgba(201,162,75,0.12); }
   .sheet-apply { width: 100%; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 18px; }
   .sheet-ignore { width: 100%; background: none; border: none; color: var(--muted); font-size: 14px; padding: 12px; cursor: pointer; margin-top: 2px; }
+
+  /* ===== ERBIL EATS MANAGER ===== */
+  .mgr-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 0 18px 12px; }
+  .mgr-stat { background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 13px 8px; text-align: center; }
+  .mgr-stat .ms-val { font-size: 21px; font-weight: 600; color: var(--text); font-family: 'Cormorant Garamond', serif; }
+  .mgr-stat .ms-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .date-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 18px 10px; scrollbar-width: none; -ms-overflow-style: none; }
+  .date-strip::-webkit-scrollbar { display: none; }
+  .date-chip { flex: 0 0 auto; width: 52px; text-align: center; padding: 8px 0; border-radius: 14px; background: var(--card); border: 0.5px solid var(--border-2); cursor: pointer; position: relative; }
+  .date-chip.active { background: var(--btn-bg); border-color: transparent; }
+  .date-chip.active .dc-dow, .date-chip.active .dc-day { color: var(--btn-text); }
+  .dc-dow { font-size: 10px; color: var(--muted); }
+  .dc-day { font-size: 18px; font-weight: 600; color: var(--text); font-family: 'Cormorant Garamond', serif; line-height: 1; }
+  .dc-count { position: absolute; top: -5px; right: -3px; background: var(--accent); color: #0C0B0A; font-size: 9px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .tag-pill { display: inline-block; background: var(--good-bg); color: var(--good-text); font-size: 10px; font-weight: 600; border-radius: 8px; padding: 2px 7px; margin: 0 4px 4px 0; }
+  .tag-pill.tag-vip { background: rgba(201,162,75,0.18); color: var(--accent); }
+  .mgr-note { font-size: 12px; color: var(--accent); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -677,38 +694,15 @@
 
   <!-- OWNER DASHBOARD -->
   <div id="owner-screen" class="owner-screen">
-    <div class="status-bar"><span id="owner-clock">9:41</span><span>●●●</span></div>
-    <div class="header">
-      <div class="header-top">
-        <div>
-          <div class="greeting" id="owner-rest-name">Restaurant</div>
-          <div class="app-title serif" style="font-size:22px;">Owner dashboard</div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
-          <div class="avatar-btn" onclick="handleLogout()" title="Tap to log out">⎋</div>
-        </div>
-      </div>
+    <div class="content" id="owner-content" style="padding-bottom:90px;"></div>
+    <div class="bottomnav" id="owner-nav">
+      <div class="nav-item" data-onav="dashboard" onclick="switchMgr('dashboard')"><span class="nav-ic">📊</span>Home</div>
+      <div class="nav-item" data-onav="diary" onclick="switchMgr('diary')"><span class="nav-ic">📅</span>Diary</div>
+      <div class="nav-item" data-onav="guests" onclick="switchMgr('guests')"><span class="nav-ic">👤</span>Guests</div>
+      <div class="nav-item" data-onav="reviews" onclick="switchMgr('reviews')"><span class="nav-ic">⭐</span>Reviews</div>
+      <div class="nav-item" data-onav="analytics" onclick="switchMgr('analytics')"><span class="nav-ic">📈</span>Stats</div>
+      <div class="nav-item" data-onav="settings" onclick="switchMgr('settings')"><span class="nav-ic">⚙️</span>More</div>
     </div>
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Today's bookings</div>
-        <div class="stat-val" id="owner-today-count">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total revenue</div>
-        <div class="stat-val" id="owner-revenue">0 IQD</div>
-      </div>
-    </div>
-    <div class="owner-tabs">
-      <div class="owner-tab active" id="tab-bookings" onclick="switchOwnerTab('bookings')" style="position:relative;">
-        Bookings
-        <span id="owner-booking-badge" style="display:none; position:absolute; top:-6px; right:-6px; background:#E5484D; color:#fff; font-size:9px; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
-      </div>
-      <div class="owner-tab" id="tab-info" onclick="switchOwnerTab('info')">Restaurant info</div>
-      <div class="owner-tab" id="tab-stats" onclick="switchOwnerTab('stats')">Analytics</div>
-    </div>
-    <div class="content" id="owner-content" style="padding-bottom:20px;"></div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -903,6 +897,10 @@ function showScreen(id) {
   } else {
     nav.classList.remove('visible');
   }
+
+  // owner manager bottom nav shows only on the owner screen
+  const onav = document.getElementById('owner-nav');
+  if (onav) onav.classList.toggle('visible', id === 'owner-screen');
 }
 
 // ===== BOTTOM NAV ROUTING =====
@@ -2271,10 +2269,25 @@ async function rejectOwner(userId) {
   renderPendingOwners();
 }
 
-// ===== OWNER DASHBOARD =====
+// ===== ERBIL EATS MANAGER (owner) =====
 let ownerRestaurant = null;
 let ownerBookings = [];
-let activeOwnerTab = 'bookings';
+let mgrTab = 'dashboard';
+let diaryDate = null;
+let availabilityMap = {};   // date -> availability row
+let guestNotesMap = {};     // user_id -> guest_notes row
+
+function greetingNow() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning ☀️' : h < 18 ? 'Good afternoon 🌤️' : 'Good evening 🌙';
+}
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function bookingsForDate(d) { return ownerBookings.filter(b => b.reservation_date === d); }
+function guestNoteFor(uid) { return guestNotesMap[uid]; }
+function isNewBooking(b) {
+  if (!b.created_at) return false;
+  return (Date.now() - new Date(b.created_at).getTime()) < 12 * 3600 * 1000;
+}
 
 async function loadOwnerDashboard(profile) {
   if (!profile.restaurant_id) {
@@ -2282,138 +2295,379 @@ async function loadOwnerDashboard(profile) {
     showScreen('auth-screen');
     return;
   }
-  const { data: rest, error: restError } = await sb.from('restaurants').select('*').eq('id', profile.restaurant_id).single();
-  if (restError || !rest) { showToast('Could not load your restaurant.'); return; }
+  const { data: rest, error } = await sb.from('restaurants').select('*').eq('id', profile.restaurant_id).single();
+  if (error || !rest) { showToast('Could not load your restaurant.'); return; }
   ownerRestaurant = rest;
-  document.getElementById('owner-rest-name').textContent = rest.name;
-  await refreshOwnerBookings();
-  activeOwnerTab = 'bookings';
-  switchOwnerTab('bookings');
+  diaryDate = todayISO();
+  await refreshOwnerData();
+  mgrTab = 'dashboard';
   showScreen('owner-screen');
+  switchMgr('dashboard');
 }
 
-async function refreshOwnerBookings() {
+async function refreshOwnerData() {
   const { data, error } = await sb
     .from('reservations').select('*, profiles(full_name, phone), restaurant_tables(table_number)')
     .eq('restaurant_id', ownerRestaurant.id)
-    .order('reservation_date', { ascending: false }).order('reservation_time', { ascending: true });
+    .order('reservation_date', { ascending: true }).order('reservation_time', { ascending: true });
   ownerBookings = error ? [] : (data || []);
-  if (error) showToast('Could not load bookings: ' + error.message);
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayBookings = ownerBookings.filter(b => b.reservation_date === today && b.status !== 'cancelled');
-  document.getElementById('owner-today-count').textContent = todayBookings.length;
+  availabilityMap = {};
+  try {
+    const { data: av } = await sb.from('availability').select('*').eq('restaurant_id', ownerRestaurant.id);
+    (av || []).forEach(a => { availabilityMap[a.date] = a; });
+  } catch (e) { /* table may not exist yet */ }
 
-  const badge = document.getElementById('owner-booking-badge');
-  if (badge) {
-    if (todayBookings.length > 0) { badge.textContent = todayBookings.length; badge.style.display = 'flex'; }
-    else badge.style.display = 'none';
-  }
-  const paidBookings = ownerBookings.filter(b => b.payment_status === 'paid' || b.status === 'confirmed');
-  const revenue = paidBookings.reduce((s, b) => s + feeFor(b.guest_count), 0);
-  document.getElementById('owner-revenue').textContent = revenue.toLocaleString() + ' IQD';
+  guestNotesMap = {};
+  try {
+    const { data: gn } = await sb.from('guest_notes').select('*').eq('restaurant_id', ownerRestaurant.id);
+    (gn || []).forEach(g => { guestNotesMap[g.user_id] = g; });
+  } catch (e) { /* table may not exist yet */ }
 }
 
-function switchOwnerTab(tab) {
-  activeOwnerTab = tab;
-  ['bookings','info','stats'].forEach(t => document.getElementById('tab-' + t).classList.toggle('active', t === tab));
-  if (tab === 'bookings') renderOwnerBookings();
-  else if (tab === 'info') renderOwnerInfo();
-  else if (tab === 'stats') renderOwnerStats();
+function switchMgr(tab) {
+  mgrTab = tab;
+  document.querySelectorAll('#owner-nav .nav-item').forEach(n => n.classList.toggle('active', n.dataset.onav === tab));
+  document.getElementById('owner-content').scrollTop = 0;
+  if (tab === 'dashboard') renderMgrDashboard();
+  else if (tab === 'diary') renderMgrDiary();
+  else if (tab === 'guests') renderMgrGuests();
+  else if (tab === 'reviews') renderMgrReviews();
+  else if (tab === 'analytics') renderMgrAnalytics();
+  else if (tab === 'settings') renderMgrSettings();
 }
 
-function renderOwnerBookings() {
-  const container = document.getElementById('owner-content');
-  if (!ownerBookings.length) {
-    container.innerHTML = '<div class="empty-state">No bookings yet.<br>They\'ll show up here as customers reserve.</div>';
-    return;
+function mgrHeader() {
+  const icon = document.body.classList.contains('dark') ? '☀️' : '🌙';
+  return `
+    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="greeting">${greetingNow()} · ${escapeHtml(ownerRestaurant.name)}</div>
+          <div class="app-title serif" style="font-size:24px;">Erbil Eats Manager</div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">${icon}</div>
+          <div class="avatar-btn" onclick="handleLogout()" title="Log out">⎋</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function ownerSetStatus(id, status) {
+  const { error } = await sb.from('reservations').update({ status }).eq('id', id);
+  if (error) { showToast('Could not update: ' + error.message); return; }
+  showToast(status === 'confirmed' ? 'Booking accepted' : 'Booking declined');
+  await refreshOwnerData();
+  switchMgr(mgrTab);
+}
+
+function bookingCard(b, opts) {
+  opts = opts || {};
+  const nm = b.profiles?.full_name || 'Guest';
+  const ph = b.profiles?.phone || '';
+  const tbl = b.restaurant_tables?.table_number || '—';
+  const note = guestNoteFor(b.user_id);
+  const cancelled = b.status === 'cancelled';
+  const pending = b.status === 'pending';
+  const highlight = pending || (opts.highlightNew && isNewBooking(b));
+  const badge = pending ? 'Pending' : (opts.highlightNew && isNewBooking(b) ? 'New' : '');
+  return `
+    <div class="booking-card ${highlight ? 'new' : ''}">
+      ${badge ? `<div class="new-badge">${badge}</div>` : ''}
+      <div class="booking-top">
+        <div>
+          <div class="booking-name">${escapeHtml(nm)}</div>
+          ${opts.showPhone && ph ? `<div class="booking-detail">📞 ${escapeHtml(ph)}</div>` : ''}
+          <div class="booking-detail">${b.guest_count || 1} guests · Table ${escapeHtml(tbl)}</div>
+          ${note && note.note ? `<div class="mgr-note">📝 ${escapeHtml(note.note)}</div>` : ''}
+        </div>
+        <div>
+          <div class="booking-time">${escapeHtml(b.reservation_time || '')}</div>
+          <div class="booking-date-sub">${cancelled ? 'Cancelled' : pending ? 'Pending' : 'Confirmed'}</div>
+        </div>
+      </div>
+      ${pending ? `<div class="booking-actions">
+        <button class="btn-accept" onclick="ownerSetStatus('${b.id}','confirmed')">Accept</button>
+        <button class="btn-decline" onclick="ownerSetStatus('${b.id}','cancelled')">Decline</button>
+      </div>` : ''}
+    </div>`;
+}
+
+// ---- DASHBOARD ----
+function renderMgrDashboard() {
+  const c = document.getElementById('owner-content');
+  const today = todayISO();
+  const todays = bookingsForDate(today).filter(b => b.status !== 'cancelled');
+  const covers = todays.reduce((s, b) => s + (b.guest_count || 0), 0);
+  const revenue = todays.filter(b => b.status === 'confirmed').reduce((s, b) => s + feeFor(b.guest_count), 0);
+  const upcoming = [...todays].sort((a, b) => (a.reservation_time || '').localeCompare(b.reservation_time || ''));
+  const serviceHtml = upcoming.length
+    ? upcoming.map(b => bookingCard(b, { highlightNew: true })).join('')
+    : '<div class="empty-state">No bookings today yet.</div>';
+  c.innerHTML = mgrHeader() + `
+    <div class="mgr-stats">
+      <div class="mgr-stat"><div class="ms-val">${todays.length}</div><div class="ms-label">Today's bookings</div></div>
+      <div class="mgr-stat"><div class="ms-val">${covers}</div><div class="ms-label">Covers</div></div>
+      <div class="mgr-stat"><div class="ms-val">${revenue.toLocaleString()}</div><div class="ms-label">Revenue IQD</div></div>
+    </div>
+    <div class="info-field" style="display:flex; align-items:center; justify-content:space-between;">
+      <div><label style="margin:0;">Restaurant status</label><div style="font-size:14px; color:var(--text);">${ownerRestaurant.is_active ? '🟢 Open & visible' : '🔴 Closed / hidden'}</div></div>
+      <div class="switch ${ownerRestaurant.is_active ? 'on' : ''}" onclick="toggleRestaurantOpen()"></div>
+    </div>
+    <div class="owner-section-title">Next service · today</div>
+    ${serviceHtml}`;
+}
+
+async function toggleRestaurantOpen() {
+  const newVal = !ownerRestaurant.is_active;
+  const { error } = await sb.from('restaurants').update({ is_active: newVal }).eq('id', ownerRestaurant.id);
+  if (error) { showToast('Could not update: ' + error.message); return; }
+  ownerRestaurant.is_active = newVal;
+  showToast(newVal ? 'Restaurant is now open' : 'Restaurant closed (hidden from customers)');
+  renderMgrDashboard();
+}
+
+// ---- DIARY ----
+function renderMgrDiary() {
+  const c = document.getElementById('owner-content');
+  const base = new Date(todayISO());
+  let strip = '';
+  for (let i = 0; i < 28; i++) {
+    const d = new Date(base); d.setDate(base.getDate() + i);
+    const iso = d.toISOString().split('T')[0];
+    const cnt = bookingsForDate(iso).filter(b => b.status !== 'cancelled').length;
+    const dow = d.toLocaleDateString('en-GB', { weekday: 'short' });
+    strip += `<div class="date-chip ${iso === diaryDate ? 'active' : ''}" onclick="selectDiaryDate('${iso}')">
+      ${cnt ? `<div class="dc-count">${cnt}</div>` : ''}
+      <div class="dc-dow">${dow}</div><div class="dc-day">${d.getDate()}</div>
+    </div>`;
   }
-  container.innerHTML = ownerBookings.map(b => {
-    const customerName = b.profiles?.full_name || 'Customer';
-    const customerPhone = b.profiles?.phone || '';
-    const tableNum = b.restaurant_tables?.table_number || '—';
-    const isCancelled = b.status === 'cancelled';
-    const isPending = b.status === 'pending';
+  c.innerHTML = mgrHeader() + `
+    <div class="owner-section-title">Reservation diary</div>
+    <div class="date-strip">${strip}</div>
+    <div id="diary-day"></div>`;
+  renderDiaryDay();
+}
+
+function selectDiaryDate(iso) { diaryDate = iso; renderMgrDiary(); }
+
+function renderDiaryDay() {
+  const el = document.getElementById('diary-day');
+  const av = availabilityMap[diaryDate] || {};
+  const isOpen = av.is_open === undefined ? true : av.is_open;
+  const dayLabel = new Date(diaryDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const list = bookingsForDate(diaryDate).sort((a, b) => (a.reservation_time || '').localeCompare(b.reservation_time || ''));
+  const active = list.filter(b => b.status !== 'cancelled').length;
+  const bookingsHtml = list.length
+    ? list.map(b => bookingCard(b, { showPhone: true })).join('')
+    : '<div class="empty-state">No bookings for this day.</div>';
+  el.innerHTML = `
+    <div class="owner-section-title" style="font-size:16px;">${dayLabel}</div>
+    <div class="info-field" style="display:flex; align-items:center; justify-content:space-between;">
+      <div><label style="margin:0;">Open for bookings</label><div style="font-size:13px; color:var(--text);">${isOpen ? 'Accepting reservations' : 'Closed this day'}</div></div>
+      <div class="switch ${isOpen ? 'on' : ''}" onclick="toggleDayOpen()"></div>
+    </div>
+    <div class="info-field"><label>Max covers (blank = no limit)</label><input id="av-max" type="number" min="0" value="${av.max_covers != null ? av.max_covers : ''}" placeholder="e.g. 40"></div>
+    <div class="info-field"><label>Note (e.g. private event)</label><input id="av-note" value="${escapeHtml(av.note || '')}" placeholder="Optional"></div>
+    <div style="display:flex; gap:8px; padding:0 18px;">
+      <button class="save-info-btn" style="margin:8px 0; flex:1; width:auto;" onclick="saveAvailability()">Save day</button>
+      <button class="btn-decline" style="margin:8px 0; flex:1; border-radius:14px;" onclick="markFullyBooked()">Fully booked</button>
+    </div>
+    <div class="owner-section-title" style="font-size:16px;">Bookings (${active})</div>
+    ${bookingsHtml}`;
+}
+
+function toggleDayOpen() {
+  const av = availabilityMap[diaryDate] || { is_open: true };
+  av.is_open = !(av.is_open === undefined ? true : av.is_open);
+  availabilityMap[diaryDate] = av;
+  renderDiaryDay();
+}
+
+async function saveAvailability() {
+  const av = availabilityMap[diaryDate] || {};
+  const maxRaw = (document.getElementById('av-max').value || '').trim();
+  const payload = {
+    restaurant_id: ownerRestaurant.id,
+    date: diaryDate,
+    is_open: av.is_open === undefined ? true : av.is_open,
+    max_covers: maxRaw === '' ? null : parseInt(maxRaw, 10),
+    note: (document.getElementById('av-note').value || '').trim() || null
+  };
+  await sb.from('availability').delete().eq('restaurant_id', ownerRestaurant.id).eq('date', diaryDate);
+  const { data, error } = await sb.from('availability').insert(payload).select().single();
+  if (error) { showToast('Could not save: ' + error.message); return; }
+  availabilityMap[diaryDate] = data;
+  showToast('Availability saved');
+  renderDiaryDay();
+}
+
+async function markFullyBooked() {
+  const av = availabilityMap[diaryDate] || {};
+  av.is_open = false;
+  availabilityMap[diaryDate] = av;
+  document.getElementById('av-note').value = 'Fully booked';
+  await saveAvailability();
+}
+
+// ---- GUESTS (CRM) ----
+function renderMgrGuests() {
+  const c = document.getElementById('owner-content');
+  const map = {};
+  ownerBookings.forEach(b => {
+    const uid = b.user_id; if (!uid) return;
+    if (!map[uid]) map[uid] = { uid, name: b.profiles?.full_name || 'Guest', phone: b.profiles?.phone || '', visits: 0 };
+    if (b.status !== 'cancelled') map[uid].visits += 1;
+  });
+  const guests = Object.values(map).sort((a, b) => b.visits - a.visits);
+  const html = guests.length ? guests.map(g => {
+    const note = guestNotesMap[g.uid];
+    const tags = note && note.tags ? note.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const tagsHtml = tags.map(t => `<span class="tag-pill ${/vip/i.test(t) ? 'tag-vip' : ''}">${escapeHtml(t)}</span>`).join('');
     return `
-      <div class="booking-card ${isPending ? 'new' : ''}">
-        ${isPending ? '<div class="new-badge">Pending</div>' : ''}
+      <div class="booking-card">
         <div class="booking-top">
           <div>
-            <div class="booking-name">${escapeHtml(customerName)}</div>
-            ${customerPhone ? '<div class="booking-detail">📞 ' + escapeHtml(customerPhone) + '</div>' : ''}
-            <div class="booking-detail">${b.guest_count || 2} guests · Table ${escapeHtml(tableNum)}</div>
-            <div class="booking-detail">💵 Pay at door</div>
+            <div class="booking-name">${escapeHtml(g.name)}</div>
+            ${g.phone ? `<div class="booking-detail">📞 ${escapeHtml(g.phone)}</div>` : ''}
+            <div class="booking-detail">${g.visits} visit${g.visits === 1 ? '' : 's'}</div>
+            ${tagsHtml ? `<div style="margin-top:5px;">${tagsHtml}</div>` : ''}
+            ${note && note.note ? `<div class="mgr-note">📝 ${escapeHtml(note.note)}</div>` : ''}
           </div>
-          <div>
-            <div class="booking-time">${escapeHtml(b.reservation_time)}</div>
-            <div class="booking-date-sub">${escapeHtml(b.reservation_date)}</div>
-          </div>
+          <button class="mini-btn" onclick="editGuestNote('${g.uid}')">${note ? 'Edit' : 'Add note'}</button>
         </div>
-        ${isCancelled
-          ? '<div style="margin-top:8px;"><span class="status-pill cancelled">Cancelled</span></div>'
-          : isPending
-            ? `<div class="booking-actions">
-                <button class="btn-accept" onclick="updateBookingStatus('${b.id}','confirmed')">Accept</button>
-                <button class="btn-decline" onclick="updateBookingStatus('${b.id}','cancelled')">Decline</button>
-              </div>`
-            : '<div style="margin-top:8px;"><span class="status-pill confirmed">Confirmed</span></div>'
-        }
       </div>`;
-  }).join('');
+  }).join('') : '<div class="empty-state">No guests yet.<br>Customers appear here after they book.</div>';
+  c.innerHTML = mgrHeader() + `<div class="owner-section-title">Guests · CRM</div>` + html;
 }
 
-async function updateBookingStatus(reservationId, newStatus) {
-  const { error } = await sb.from('reservations').update({ status: newStatus }).eq('id', reservationId);
-  if (error) { showToast('Could not update booking: ' + error.message); return; }
-  showToast(newStatus === 'confirmed' ? 'Booking accepted' : 'Booking declined');
-  await refreshOwnerBookings();
-  renderOwnerBookings();
+async function editGuestNote(uid) {
+  const existing = guestNotesMap[uid] || {};
+  const note = prompt('Guest note (allergies, preferences, birthday):', existing.note || '');
+  if (note === null) return;
+  const tags = prompt('Tags, comma-separated (e.g. VIP, Vegetarian, Birthday):', existing.tags || '');
+  if (tags === null) return;
+  await sb.from('guest_notes').delete().eq('restaurant_id', ownerRestaurant.id).eq('user_id', uid);
+  const { data, error } = await sb.from('guest_notes').insert({
+    restaurant_id: ownerRestaurant.id, user_id: uid,
+    note: note.trim() || null, tags: tags.trim() || null
+  }).select().single();
+  if (error) { showToast('Could not save note: ' + error.message); return; }
+  guestNotesMap[uid] = data;
+  showToast('Guest note saved');
+  renderMgrGuests();
 }
 
-function renderOwnerInfo() {
-  const container = document.getElementById('owner-content');
-  container.innerHTML = `
-    <div class="owner-section-title">Restaurant details</div>
-    <div class="info-field"><label>Name</label><input id="info-name" value="${escapeHtml(ownerRestaurant.name)}"></div>
-    <div class="info-field"><label>Cuisine type</label><input id="info-cuisine" value="${escapeHtml(ownerRestaurant.cuisine || '')}"></div>
-    <div class="info-field"><label>Address</label><input id="info-address" value="${escapeHtml(ownerRestaurant.address || '')}"></div>
-    <div class="info-field"><label>360° Tour link (paste from Kuula/CloudPano)</label><input id="info-tour" value="${escapeHtml(ownerRestaurant.tour_url || '')}" placeholder="https://kuula.co/share/..."></div>
-    <div class="info-field"><label>Active (visible to customers)</label><input id="info-active" type="checkbox" ${ownerRestaurant.is_active ? 'checked' : ''} style="width:auto;"></div>
-    <button class="save-info-btn" onclick="saveOwnerInfo()">Save changes</button>`;
+// ---- REVIEWS ----
+async function renderMgrReviews() {
+  const c = document.getElementById('owner-content');
+  c.innerHTML = mgrHeader() + `<div class="owner-section-title">Reviews</div><div id="mgr-reviews-body"><div class="empty-state">Loading...</div></div>`;
+  const body = document.getElementById('mgr-reviews-body');
+  let revs = [];
+  try {
+    const { data, error } = await sb.from('reviews').select('*, profiles(full_name)').eq('restaurant_id', ownerRestaurant.id).order('created_at', { ascending: false });
+    if (error) throw error;
+    revs = data || [];
+  } catch (e) {
+    body.innerHTML = '<div class="empty-state">No reviews yet.</div>';
+    return;
+  }
+  if (!revs.length) { body.innerHTML = '<div class="empty-state">No reviews yet.</div>'; return; }
+  const agg = computeAgg(revs);
+  const full = Math.round(agg.avg);
+  body.innerHTML = `<div class="reviews-summary"><div class="reviews-avg"><span class="ra-stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> ${agg.avg} <span class="ra-count">(${agg.count} review${agg.count === 1 ? '' : 's'})</span></div></div>`
+    + revs.map(r => {
+      const nm = r.profiles?.full_name || 'Diner';
+      const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      return `<div class="review-card">
+        <div class="review-top"><div class="review-name">${escapeHtml(nm)}</div><div class="review-date">${date}</div></div>
+        <div class="review-stars">${stars}</div>
+        ${r.comment ? `<div class="review-comment">${escapeHtml(r.comment)}</div>` : ''}
+      </div>`;
+    }).join('');
 }
 
-async function saveOwnerInfo() {
-  const name = document.getElementById('info-name').value.trim();
-  const cuisine = document.getElementById('info-cuisine').value.trim();
-  const address = document.getElementById('info-address').value.trim();
-  const tourUrl = document.getElementById('info-tour').value.trim();
-  const isActive = document.getElementById('info-active').checked;
-  if (!name) { showToast('Restaurant name cannot be empty.'); return; }
-  const { error } = await sb.from('restaurants').update({ name, cuisine, address, tour_url: tourUrl, is_active: isActive }).eq('id', ownerRestaurant.id);
-  if (error) { showToast('Could not save: ' + error.message); return; }
-  ownerRestaurant.name = name; ownerRestaurant.cuisine = cuisine; ownerRestaurant.address = address;
-  ownerRestaurant.tour_url = tourUrl; ownerRestaurant.is_active = isActive;
-  document.getElementById('owner-rest-name').textContent = name;
-  showToast('Restaurant info saved');
-}
-
-function renderOwnerStats() {
-  const container = document.getElementById('owner-content');
+// ---- ANALYTICS ----
+function renderMgrAnalytics() {
+  const c = document.getElementById('owner-content');
   const total = ownerBookings.length;
   const confirmed = ownerBookings.filter(b => b.status === 'confirmed').length;
   const cancelled = ownerBookings.filter(b => b.status === 'cancelled').length;
-  const cashPay = ownerBookings.filter(b => b.payment_method === 'cash').length;
-  const timeSlots = {};
-  ownerBookings.forEach(b => { timeSlots[b.reservation_time] = (timeSlots[b.reservation_time] || 0) + 1; });
-  const topTime = Object.entries(timeSlots).sort((a, b) => b[1] - a[1])[0];
-  container.innerHTML = `
-    <div class="owner-section-title">Overview</div>
-    <div class="info-field"><label>Total bookings (all time)</label><div style="font-size:18px; font-weight:600; color:var(--text);">${total}</div></div>
-    <div class="info-field"><label>Confirmed</label><div style="font-size:18px; font-weight:600; color:var(--good-text);">${confirmed}</div></div>
-    <div class="info-field"><label>Cancelled</label><div style="font-size:18px; font-weight:600; color:#A32D2D;">${cancelled}</div></div>
-    <div class="info-field"><label>Estimated revenue</label><div style="font-size:18px; font-weight:600; color:var(--text);">${ownerBookings.filter(b => b.status === 'confirmed').reduce((s, b) => s + feeFor(b.guest_count), 0).toLocaleString()} IQD</div></div>
-    <div class="info-field"><label>Payments</label><div style="font-size:13px; color:var(--text);">💵 ${cashPay} cash bookings</div></div>
-    <div class="info-field"><label>Most popular time</label><div style="font-size:13px; color:var(--text);">${topTime ? escapeHtml(topTime[0]) + ' (' + topTime[1] + ' bookings)' : 'Not enough data yet'}</div></div>`;
+  const cash = ownerBookings.filter(b => b.payment_method === 'cash').length;
+  const revenue = ownerBookings.filter(b => b.status === 'confirmed').reduce((s, b) => s + feeFor(b.guest_count), 0);
+
+  const slots = {};
+  ownerBookings.filter(b => b.status !== 'cancelled').forEach(b => { if (b.reservation_time) slots[b.reservation_time] = (slots[b.reservation_time] || 0) + 1; });
+  const top = Object.entries(slots).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxSlot = top.length ? top[0][1] : 1;
+  const slotsHtml = top.length ? top.map(([t, n]) => `
+    <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+      <div style="width:64px; font-size:12px; color:var(--muted);">${escapeHtml(t)}</div>
+      <div style="flex:1; background:var(--border); border-radius:6px; height:10px; overflow:hidden;"><div style="width:${Math.round(n / maxSlot * 100)}%; height:100%; background:var(--accent);"></div></div>
+      <div style="font-size:12px; color:var(--text); width:20px; text-align:right;">${n}</div>
+    </div>`).join('') : '<div style="font-size:13px; color:var(--muted);">Not enough data yet</div>';
+
+  let coversHtml = '';
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(todayISO()); d.setDate(d.getDate() - i);
+    const iso = d.toISOString().split('T')[0];
+    const cov = bookingsForDate(iso).filter(b => b.status !== 'cancelled').reduce((s, b) => s + (b.guest_count || 0), 0);
+    coversHtml += `<div style="display:flex; justify-content:space-between; font-size:12px; padding:3px 0;"><span style="color:var(--muted);">${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })}</span><span style="color:var(--text);">${cov} covers</span></div>`;
+  }
+
+  c.innerHTML = mgrHeader() + `
+    <div class="owner-section-title">Analytics</div>
+    <div class="mgr-stats">
+      <div class="mgr-stat"><div class="ms-val">${total}</div><div class="ms-label">Total</div></div>
+      <div class="mgr-stat"><div class="ms-val" style="color:var(--good-text);">${confirmed}</div><div class="ms-label">Confirmed</div></div>
+      <div class="mgr-stat"><div class="ms-val" style="color:#C0504D;">${cancelled}</div><div class="ms-label">Cancelled</div></div>
+    </div>
+    <div class="info-field"><label>Estimated revenue (confirmed)</label><div style="font-size:18px; font-weight:600; color:var(--text);">${revenue.toLocaleString()} IQD</div></div>
+    <div class="info-field"><label>Busiest time slots</label>${slotsHtml}</div>
+    <div class="info-field"><label>Covers · last 7 days</label>${coversHtml}</div>
+    <div class="info-field"><label>Payment split</label><div style="font-size:13px; color:var(--text);">💵 ${cash} cash bookings</div></div>
+    <div class="info-field" onclick="comingSoon('Peer comparison')" style="cursor:pointer;"><label>Peer comparison</label><div style="font-size:13px; color:var(--muted);">Coming soon 🚧</div></div>
+    <div class="info-field" onclick="comingSoon('Occupancy forecast')" style="cursor:pointer;"><label>Occupancy forecast</label><div style="font-size:13px; color:var(--muted);">Coming soon 🚧</div></div>`;
+}
+
+// ---- SETTINGS ----
+function renderMgrSettings() {
+  const r = ownerRestaurant;
+  document.getElementById('owner-content').innerHTML = mgrHeader() + `
+    <div class="owner-section-title">Restaurant settings</div>
+    <div class="info-field"><label>Name</label><input id="set-name" value="${escapeHtml(r.name)}"></div>
+    <div class="info-field"><label>Cuisine type</label><input id="set-cuisine" value="${escapeHtml(r.cuisine || '')}"></div>
+    <div class="info-field"><label>Phone</label><input id="set-phone" value="${escapeHtml(r.phone || '')}" placeholder="0750 123 4567"></div>
+    <div class="info-field"><label>Address</label><input id="set-address" value="${escapeHtml(r.address || '')}"></div>
+    <div class="info-field"><label>Opening hours</label><input id="set-hours" value="${escapeHtml(r.opening_hours || '')}" placeholder="e.g. 10:00 AM – 11:30 PM"></div>
+    <div class="info-field"><label>Description</label><textarea id="set-desc" style="min-height:60px;">${escapeHtml(r.description || '')}</textarea></div>
+    <div class="info-field"><label>Cover photo URL</label><input id="set-photo" value="${escapeHtml(r.photo_url || '')}" placeholder="https://..."></div>
+    <div class="info-field"><label>360° Tour link</label><input id="set-tour" value="${escapeHtml(r.tour_url || '')}" placeholder="https://kuula.co/share/..."></div>
+    <div class="info-field" style="display:flex; align-items:center; justify-content:space-between;"><div><label style="margin:0;">Active (visible to customers)</label></div><div class="switch ${r.is_active ? 'on' : ''}" id="set-active-switch" onclick="this.classList.toggle('on')"></div></div>
+    <button class="save-info-btn" onclick="saveMgrSettings()">Save changes</button>`;
+}
+
+async function saveMgrSettings() {
+  const name = (document.getElementById('set-name').value || '').trim();
+  if (!name) { showToast('Restaurant name cannot be empty.'); return; }
+  const payload = {
+    name,
+    cuisine: (document.getElementById('set-cuisine').value || '').trim(),
+    phone: (document.getElementById('set-phone').value || '').trim() || null,
+    address: (document.getElementById('set-address').value || '').trim(),
+    opening_hours: (document.getElementById('set-hours').value || '').trim() || null,
+    description: (document.getElementById('set-desc').value || '').trim() || null,
+    photo_url: (document.getElementById('set-photo').value || '').trim() || null,
+    tour_url: (document.getElementById('set-tour').value || '').trim() || null,
+    is_active: document.getElementById('set-active-switch').classList.contains('on')
+  };
+  const { error } = await sb.from('restaurants').update(payload).eq('id', ownerRestaurant.id);
+  if (error) { showToast('Could not save: ' + error.message); return; }
+  Object.assign(ownerRestaurant, payload);
+  showToast('Settings saved');
 }
 
 // ===== CLOCK =====
