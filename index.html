@@ -292,6 +292,35 @@
   .friend-add.added { background: var(--good-bg); color: var(--good-text); }
   .friend-action { margin-left: auto; display: flex; gap: 6px; }
   .mini-btn { background: var(--card); border: 0.5px solid var(--border-2); color: var(--text); border-radius: 10px; padding: 8px 11px; font-size: 11px; cursor: pointer; }
+
+  /* ===== REVIEWS ===== */
+  .reviews-summary { padding: 2px 18px 8px; }
+  .reviews-avg { font-size: 16px; font-weight: 600; color: var(--text); }
+  .reviews-avg .ra-stars { color: #E0A52E; }
+  body.dark .reviews-avg .ra-stars { color: var(--accent); }
+  .reviews-avg .ra-count { color: var(--muted); font-weight: 400; font-size: 13px; }
+  .review-card { background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; margin: 0 18px 10px; padding: 12px 14px; }
+  .review-top { display: flex; justify-content: space-between; align-items: center; }
+  .review-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .review-date { font-size: 11px; color: var(--faint); }
+  .review-stars { color: #E0A52E; font-size: 13px; margin-top: 4px; letter-spacing: 2px; }
+  body.dark .review-stars { color: var(--accent); }
+  .review-comment { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .review-rest { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+
+  /* ===== REVIEW MODAL ===== */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .modal-card { background: var(--card); border-radius: 18px; padding: 20px; width: 100%; max-width: 360px; border: 0.5px solid var(--border); }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 23px; font-weight: 600; color: var(--serif); margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .star-pick { font-size: 36px; letter-spacing: 8px; color: #E0A52E; text-align: center; margin: 6px 0 14px; }
+  .pick-star { cursor: pointer; }
+  .review-textarea { width: 100%; min-height: 84px; border: 0.5px solid var(--border-2); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg); outline: none; resize: vertical; }
+  .review-textarea:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .modal-actions button { flex: 1; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-submit { background: var(--btn-bg); color: var(--btn-text); border: none; }
+  .modal-cancel { background: var(--card); color: var(--muted); border: 0.5px solid var(--border-2); }
 </style>
 </head>
 <body>
@@ -571,6 +600,10 @@
         <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Selected</div>
       </div>
       <div class="table-grid" id="table-grid"></div>
+      <div class="sub-label">Reviews · المراجعات</div>
+      <div class="reviews-summary" id="d-reviews-summary"></div>
+      <button class="explore-btn" id="write-review-btn" style="margin-top:4px;" onclick="openReviewForm()">Write a review</button>
+      <div id="d-reviews-list"></div>
     </div>
     <div class="bottom-panel">
       <button class="confirm-btn" id="book-btn" disabled onclick="goToPayment()">Select a table to reserve</button>
@@ -670,6 +703,20 @@
     <div class="nav-item" data-nav="profile" onclick="navTo('profile')"><span class="nav-ic">👤</span>Profile</div>
   </div>
 
+  <!-- REVIEW MODAL -->
+  <div id="review-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-title" id="review-modal-title">Rate this restaurant</div>
+      <div class="modal-sub" id="review-modal-sub"></div>
+      <div class="star-pick" id="star-pick"></div>
+      <textarea class="review-textarea" id="review-comment" placeholder="Share your experience (optional)..."></textarea>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeReviewForm()">Cancel</button>
+        <button class="modal-submit" onclick="submitReview()">Submit review</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 </div>
 
@@ -712,6 +759,41 @@ let activeSearchCategory = 'All';
 let friendIdSet = new Set();
 let nameById = {};
 let friendSearchTimer = null;
+
+// reviews state
+let reviewAgg = {};            // restaurant_id -> { sum, count, avg }
+let detailReviews = [];        // reviews for the currently open restaurant
+let selectedReviewRating = 0;
+
+// Use the average of real reviews when available, else the stored rating
+function avgNum(r) {
+  const a = reviewAgg[r.id];
+  if (a && a.count > 0) return a.avg;
+  return r.rating || 0;
+}
+function ratingFor(r) {
+  const a = reviewAgg[r.id];
+  if (a && a.count > 0) return a.avg;
+  return r.rating || '—';
+}
+function computeAgg(list) {
+  if (!list.length) return { sum: 0, count: 0, avg: 0 };
+  const sum = list.reduce((s, x) => s + (x.rating || 0), 0);
+  return { sum, count: list.length, avg: Math.round((sum / list.length) * 10) / 10 };
+}
+async function loadReviewAggregates() {
+  reviewAgg = {};
+  const { data } = await sb.from('reviews').select('restaurant_id, rating');
+  (data || []).forEach(r => {
+    const a = reviewAgg[r.restaurant_id] || { sum: 0, count: 0 };
+    a.sum += (r.rating || 0); a.count += 1;
+    reviewAgg[r.restaurant_id] = a;
+  });
+  Object.keys(reviewAgg).forEach(k => {
+    const a = reviewAgg[k];
+    a.avg = Math.round((a.sum / a.count) * 10) / 10;
+  });
+}
 
 const MAIN_SCREENS = ['home','search','bookings','saved','profile'];
 const SCREEN_IDS = {
@@ -1029,6 +1111,7 @@ async function loadHome() {
   if (error) showToast('Could not load restaurants: ' + error.message);
 
   await loadFavData();
+  await loadReviewAggregates();
 
   renderChips('home-chips', '', 'jumpToCategory');
   renderFeatured();
@@ -1098,7 +1181,7 @@ function renderChips(containerId, active, onClickName) {
 }
 
 function renderFeatured() {
-  const top = [...restaurants].sort((a,b) => (b.rating||0) - (a.rating||0)).slice(0, 8);
+  const top = [...restaurants].sort((a,b) => avgNum(b) - avgNum(a)).slice(0, 8);
   const row = document.getElementById('featured-row');
   if (!top.length) { row.innerHTML = ''; return; }
   row.innerHTML = top.map(r => `
@@ -1109,7 +1192,7 @@ function renderFeatured() {
       </div>
       <div class="feat-info">
         <div class="feat-name">${escapeHtml(r.name)}</div>
-        <div class="feat-meta">★ ${r.rating || '—'} · ${escapeHtml(r.cuisine || '')}</div>
+        <div class="feat-meta">★ ${ratingFor(r)} · ${escapeHtml(r.cuisine || '')}</div>
       </div>
     </div>
   `).join('');
@@ -1135,7 +1218,7 @@ function renderGrid(containerId, list, opts) {
         <div class="card-photo">
           <img src="${photoFor(r)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
           <div class="card-emoji" style="display:none; background:${r.bg_color || '#EEE'};">${r.image_emoji || '🍴'}</div>
-          <div class="star-badge">★ ${r.rating || '—'}</div>
+          <div class="star-badge">★ ${ratingFor(r)}</div>
           ${extra}
         </div>
         <div class="card-info">
@@ -1483,7 +1566,7 @@ async function viewFriend(friendId) {
   const name = nameById[friendId] || 'Friend';
   document.getElementById('fd-name').textContent = name;
   document.getElementById('fd-sub').textContent = 'What they love in Erbil';
-  document.getElementById('fd-reviews').innerHTML = '<div class="empty-state" style="padding:24px;">Reviews coming soon 🚧</div>';
+  loadFriendReviews(friendId);
   const saved = document.getElementById('fd-saved');
   saved.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">Loading...</div>';
   showScreen('friend-detail-screen');
@@ -1495,6 +1578,31 @@ async function viewFriend(friendId) {
     return;
   }
   renderGrid('fd-saved', rests);
+}
+
+async function loadFriendReviews(friendId) {
+  const el = document.getElementById('fd-reviews');
+  el.innerHTML = '<div class="empty-state" style="padding:20px;">Loading...</div>';
+  const { data } = await sb.from('reviews').select('*, restaurants(name)')
+    .eq('user_id', friendId).order('created_at', { ascending: false });
+  const revs = data || [];
+  if (!revs.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px;">No reviews yet.</div>';
+    return;
+  }
+  el.innerHTML = revs.map(r => {
+    const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+    return `
+      <div class="review-card">
+        <div class="review-rest">${escapeHtml(r.restaurants?.name || 'Restaurant')}</div>
+        <div class="review-top">
+          <div class="review-stars">${stars}</div>
+          <div class="review-date">${date}</div>
+        </div>
+        ${r.comment ? `<div class="review-comment">${escapeHtml(r.comment)}</div>` : ''}
+      </div>`;
+  }).join('');
 }
 
 // ===== DETAIL / TABLES =====
@@ -1539,6 +1647,113 @@ async function openDetail(restaurantId) {
 
   setTimeout(() => { loadDetailMap(); }, 100);
   await loadTables();
+  await loadDetailReviews();
+}
+
+// ===== REVIEWS =====
+async function loadDetailReviews() {
+  const summary = document.getElementById('d-reviews-summary');
+  const listEl = document.getElementById('d-reviews-list');
+  summary.innerHTML = '';
+  listEl.innerHTML = '';
+  const { data } = await sb
+    .from('reviews').select('*, profiles(full_name)')
+    .eq('restaurant_id', currentRestaurant.id)
+    .order('created_at', { ascending: false });
+  detailReviews = data || [];
+
+  const agg = computeAgg(detailReviews);
+  // keep the global aggregate in sync so cards/featured reflect new reviews
+  if (agg.count > 0) reviewAgg[currentRestaurant.id] = agg;
+  else delete reviewAgg[currentRestaurant.id];
+
+  // refresh the rating shown next to the name
+  const shown = agg.count > 0 ? agg.avg : (currentRestaurant.rating || '—');
+  document.getElementById('d-meta').textContent =
+    `${currentRestaurant.cuisine || ''}  ·  ★ ${shown}${agg.count > 0 ? ' (' + agg.count + ')' : ''}`;
+
+  renderDetailReviews();
+}
+
+function renderDetailReviews() {
+  const summary = document.getElementById('d-reviews-summary');
+  const listEl = document.getElementById('d-reviews-list');
+  const agg = computeAgg(detailReviews);
+  if (agg.count > 0) {
+    const full = Math.round(agg.avg);
+    summary.innerHTML = `<div class="reviews-avg"><span class="ra-stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span> ${agg.avg} <span class="ra-count">(${agg.count} review${agg.count === 1 ? '' : 's'})</span></div>`;
+  } else {
+    summary.innerHTML = `<div class="reviews-avg ra-count" style="font-weight:400;">No reviews yet — be the first to review!</div>`;
+  }
+  const mine = detailReviews.find(r => r.user_id === currentUser.id);
+  const btn = document.getElementById('write-review-btn');
+  if (btn) btn.textContent = mine ? 'Edit your review' : 'Write a review';
+  listEl.innerHTML = detailReviews.map(r => {
+    const name = r.profiles?.full_name || 'Diner';
+    const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+    const isMine = r.user_id === currentUser.id;
+    return `
+      <div class="review-card">
+        <div class="review-top">
+          <div class="review-name">${escapeHtml(name)}${isMine ? ' · <span style="color:var(--accent);">you</span>' : ''}</div>
+          <div class="review-date">${date}</div>
+        </div>
+        <div class="review-stars">${stars}</div>
+        ${r.comment ? `<div class="review-comment">${escapeHtml(r.comment)}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function openReviewForm() {
+  if (!currentUser || !currentRestaurant) return;
+  const mine = detailReviews.find(r => r.user_id === currentUser.id);
+  selectedReviewRating = mine ? mine.rating : 0;
+  document.getElementById('review-modal-title').textContent = mine ? 'Edit your review' : 'Rate this restaurant';
+  document.getElementById('review-modal-sub').textContent = currentRestaurant.name;
+  document.getElementById('review-comment').value = mine ? (mine.comment || '') : '';
+  renderStarPick();
+  document.getElementById('review-modal').style.display = 'flex';
+}
+
+function closeReviewForm() { document.getElementById('review-modal').style.display = 'none'; }
+
+function selectReviewStar(n) { selectedReviewRating = n; renderStarPick(); }
+
+function renderStarPick() {
+  document.getElementById('star-pick').innerHTML = [1,2,3,4,5].map(n =>
+    `<span class="pick-star" onclick="selectReviewStar(${n})">${n <= selectedReviewRating ? '★' : '☆'}</span>`
+  ).join('');
+}
+
+async function submitReview() {
+  if (selectedReviewRating < 1) { showToast('Please tap a star rating first'); return; }
+  const comment = document.getElementById('review-comment').value.trim() || null;
+  const mine = detailReviews.find(r => r.user_id === currentUser.id);
+  let error;
+  if (mine) {
+    ({ error } = await sb.from('reviews').update({ rating: selectedReviewRating, comment }).eq('id', mine.id));
+  } else {
+    ({ error } = await sb.from('reviews').insert({
+      user_id: currentUser.id, restaurant_id: currentRestaurant.id,
+      rating: selectedReviewRating, comment
+    }));
+  }
+  if (error) { showToast('Could not save review: ' + error.message); return; }
+  showToast('Review saved ★');
+  closeReviewForm();
+  await loadDetailReviews();
+}
+
+// Leave a review straight from a booking card
+async function reviewFromBooking(restId) {
+  const r = restaurants.find(x => x.id === restId);
+  if (!r) { showToast('Open the restaurant from Search to review it'); return; }
+  currentRestaurant = r;
+  const { data } = await sb.from('reviews').select('*, profiles(full_name)')
+    .eq('restaurant_id', restId).order('created_at', { ascending: false });
+  detailReviews = data || [];
+  openReviewForm();
 }
 
 function navBackFromDetail() {
@@ -1782,7 +1997,10 @@ async function openMyBookings() {
         </div>
         <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
           ${statusLabel}
-          ${canCancel ? `<button class="btn-decline" style="flex:0 0 auto; padding:6px 16px;" onclick="cancelMyBooking('${b.id}')">Cancel</button>` : ''}
+          <div style="display:flex; gap:8px;">
+            ${!isCancelled ? `<button class="btn-decline" style="flex:0 0 auto; padding:6px 14px;" onclick="reviewFromBooking('${b.restaurant_id}')">★ Review</button>` : ''}
+            ${canCancel ? `<button class="btn-decline" style="flex:0 0 auto; padding:6px 16px;" onclick="cancelMyBooking('${b.id}')">Cancel</button>` : ''}
+          </div>
         </div>
       </div>`;
   }).join('');
