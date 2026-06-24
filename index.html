@@ -615,13 +615,6 @@
       </div>
       <input type="date" id="booking-date" style="display:none;">
       <input type="time" id="booking-time" style="display:none;">
-      <div class="sub-label">Choose a table | اختر الطاولة</div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#C0DD97;"></div>Free</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#F7C1C1;"></div>Taken</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Selected</div>
-      </div>
-      <div class="table-grid" id="table-grid"></div>
       <div class="sub-label">Reviews · المراجعات</div>
       <div class="reviews-summary" id="d-reviews-summary"></div>
       <button class="explore-btn" id="write-review-btn" style="margin-top:4px;" onclick="openReviewForm()">Write a review</button>
@@ -642,7 +635,7 @@
     <div class="content" style="padding-bottom:20px;">
       <div class="summary-card">
         <div class="summary-row"><span>Restaurant</span><span id="p-rest"></span></div>
-        <div class="summary-row"><span>Table</span><span id="p-table"></span></div>
+        <div class="summary-row"><span>Guests</span><span id="p-table"></span></div>
         <div class="summary-row"><span>Time</span><span id="p-time"></span></div>
         <hr class="divider">
         <div class="summary-row"><span>Reservation fee</span><span id="p-fee-calc">500 IQD × 2</span></div>
@@ -675,7 +668,7 @@
     <div class="success-sub" id="s-sub">Your reservation is confirmed.</div>
     <div class="conf-card">
       <div class="conf-row"><span>Restaurant</span><span id="c-rest">—</span></div>
-      <div class="conf-row"><span>Table</span><span id="c-table">—</span></div>
+      <div class="conf-row"><span>Guests</span><span id="c-table">—</span></div>
       <div class="conf-row"><span>Time</span><span id="c-time">—</span></div>
       <div class="conf-row"><span>Payment</span><span id="c-payment">—</span></div>
     </div>
@@ -1657,7 +1650,7 @@ async function openDetail(restaurantId) {
   document.getElementById('booking-time').value = '';
   selectedGuests = 2;
   document.getElementById('book-btn').disabled = true;
-  document.getElementById('book-btn').textContent = 'Select a table to reserve';
+  document.getElementById('book-btn').textContent = 'Pick a date & time to reserve';
   // reset booking filter pills to defaults
   document.getElementById('pill-date').textContent = 'Today';
   document.getElementById('pill-time').textContent = 'Hour';
@@ -1692,7 +1685,6 @@ async function openDetail(restaurantId) {
   }
 
   setTimeout(() => { loadDetailMap(); }, 100);
-  await loadTables();
   await loadDetailReviews();
 }
 
@@ -1826,85 +1818,38 @@ function loadDetailMap() {
   }
 }
 
-async function loadTables() {
-  const grid = document.getElementById('table-grid');
-  grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted); font-size:12px;">Loading tables...</div>';
-
-  const { data: tables, error: tablesError } = await sb
+// Auto-assign an available table for the chosen date/time/party size.
+// Customers no longer pick a table; the system seats them and stores the
+// table_id so bookings stay valid and owners still see the table.
+async function assignTable() {
+  selectedTableId = null; selectedTableNumber = null;
+  const { data: tables } = await sb
     .from('restaurant_tables').select('*').eq('restaurant_id', currentRestaurant.id).order('table_number');
+  if (!tables || !tables.length) return false;
 
-  if (tablesError) {
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#A32D2D; font-size:12px;">Could not load tables.</div>';
-    return;
-  }
-
-  const dateToCheck = selectedDate || new Date().toISOString().split('T')[0];
   const { data: existingBookings } = await sb
     .from('reservations').select('table_id, reservation_time')
-    .eq('restaurant_id', currentRestaurant.id).eq('reservation_date', dateToCheck).neq('status', 'cancelled');
+    .eq('restaurant_id', currentRestaurant.id).eq('reservation_date', selectedDate).neq('status', 'cancelled');
+  const takenIds = new Set((existingBookings || []).filter(b => b.reservation_time === selectedTime).map(b => b.table_id));
 
-  const bookedTableIds = new Set();
-  (existingBookings || []).forEach(b => {
-    if (!selectedTime || b.reservation_time === selectedTime) bookedTableIds.add(b.table_id);
-  });
-
-  if (!tables || !tables.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--muted); font-size:12px;">No tables set up for this restaurant yet.</div>';
-    return;
-  }
-
-  grid.innerHTML = tables.map(t => {
-    const isTaken = bookedTableIds.has(t.id);
-    const isSelected = selectedTableId === t.id;
-    const cls = isSelected ? 'selected' : (isTaken ? 'taken' : 'free');
-    return `<div class="table-cell ${cls}" ${isTaken ? '' : `onclick="selectTable('${t.id}','${t.table_number}')"`}>
-      <span>🪑</span>${escapeHtml(t.table_number)}
-    </div>`;
-  }).join('');
-}
-
-document.getElementById('booking-date').addEventListener('change', async (e) => {
-  selectedDate = e.target.value;
-  selectedTableId = null;
-  updateBookBtn();
-  await loadTables();
-});
-
-function selectTable(id, number) {
-  selectedTableId = id; selectedTableNumber = number;
-  document.querySelectorAll('.table-cell.selected').forEach(c => c.classList.remove('selected'));
-  loadTables();
-  updateBookBtn();
-}
-
-function selectGuests(el, count) {
-  selectedGuests = count;
-  document.querySelectorAll('.guest-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-function selectTimeFromPicker() {
-  const timeValue = document.getElementById('booking-time').value;
-  if (!timeValue) { selectedTime = null; updateBookBtn(); return; }
-  const [hours, minutes] = timeValue.split(':');
-  const h = parseInt(hours);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  selectedTime = `${h12}:${minutes} ${ampm}`;
-  selectedTableId = null;
-  loadTables();
-  updateBookBtn();
+  const free = tables.filter(t => !takenIds.has(t.id));
+  if (!free.length) return false;
+  // prefer the smallest table that still fits the party
+  const fits = free.filter(t => (t.capacity || 99) >= selectedGuests).sort((a, b) => (a.capacity || 0) - (b.capacity || 0));
+  const chosen = fits[0] || free[0];
+  selectedTableId = chosen.id;
+  selectedTableNumber = chosen.table_number;
+  return true;
 }
 
 function updateBookBtn() {
   const btn = document.getElementById('book-btn');
-  if (selectedTableId && selectedTime) {
+  if (selectedTime) {
     btn.disabled = false;
-    btn.textContent = `Continue with ${selectedTableNumber} · ${selectedTime}`;
-  } else if (selectedTableId) {
-    btn.disabled = true; btn.textContent = 'Now pick a time';
+    btn.textContent = `Reserve · ${selectedTime} · ${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
   } else {
-    btn.disabled = true; btn.textContent = 'Select a table to reserve';
+    btn.disabled = true;
+    btn.textContent = 'Pick a date & time to reserve';
   }
 }
 
@@ -2031,15 +1976,22 @@ function applyBookingSheet() {
 
   selectedTableId = null;
   closeBookingSheet();
-  loadTables();        // refresh table availability for the chosen date/time
   updateBookBtn();
-  showToast('Reservation set — now pick a table');
+  showToast('Reservation set — tap Reserve to continue');
 }
 
 // ===== PAYMENT =====
-function goToPayment() {
+async function goToPayment() {
+  if (!selectedTime) { showToast('Please pick a date & time first'); return; }
+  const btn = document.getElementById('book-btn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Checking availability...';
+  const ok = await assignTable();
+  btn.disabled = false; btn.textContent = orig;
+  if (!ok) { showToast('Sorry, no tables free at that time. Try another time.'); return; }
+
   document.getElementById('p-rest').textContent = currentRestaurant.name;
-  document.getElementById('p-table').textContent = `${selectedTableNumber} · ${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
+  document.getElementById('p-table').textContent = `${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
   document.getElementById('p-time').textContent = `${selectedTime} · ${selectedDate}`;
   document.getElementById('p-meta').textContent = `${currentRestaurant.name} · ${selectedTableNumber} · ${selectedTime}`;
   document.getElementById('p-fee-calc').textContent = `${FEE_PER_PERSON.toLocaleString()} IQD × ${selectedGuests}`;
@@ -2062,7 +2014,7 @@ async function confirmBooking() {
     if (error) throw error;
 
     document.getElementById('c-rest').textContent = currentRestaurant.name;
-    document.getElementById('c-table').textContent = selectedTableNumber;
+    document.getElementById('c-table').textContent = `${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
     document.getElementById('c-time').textContent = `${selectedTime} · ${selectedDate}`;
     document.getElementById('c-payment').textContent = `${feeText(selectedGuests)} · Cash at door`;
     document.getElementById('s-title').textContent = 'Table reserved!';
@@ -2108,7 +2060,6 @@ async function sendBookingEmails() {
         <p style="color: #5F5E5A;">Hi ${customerName}, your table is reserved.</p>
         <div style="background: #fff; border-radius: 12px; padding: 16px; margin: 16px 0;">
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Restaurant:</strong> ${restName}</p>
-          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Table:</strong> ${selectedTableNumber}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Date:</strong> ${selectedDate}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Time:</strong> ${selectedTime}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Guests:</strong> ${selectedGuests}</p>
