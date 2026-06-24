@@ -321,6 +321,33 @@
   .modal-actions button { flex: 1; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
   .modal-submit { background: var(--btn-bg); color: var(--btn-text); border: none; }
   .modal-cancel { background: var(--card); color: var(--muted); border: 0.5px solid var(--border-2); }
+
+  /* ===== BOOKING FILTER BAR (TheFork-style) ===== */
+  .filter-bar { display: flex; gap: 8px; padding: 6px 18px 4px; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none; }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-pill { display: inline-flex; align-items: center; gap: 7px; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 22px; padding: 10px 14px; font-size: 13px; color: var(--text); cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .filter-pill .fp-ic { font-size: 14px; }
+  .filter-pill .fp-chev { color: var(--muted); font-size: 10px; }
+  .filter-row2 { padding: 4px 18px 2px; }
+  .filter-settings { display: inline-flex; align-items: center; gap: 7px; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 22px; padding: 10px 14px; font-size: 13px; color: var(--text); cursor: pointer; }
+
+  /* ===== BOTTOM SHEET + WHEEL PICKERS ===== */
+  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 320; display: none; align-items: flex-end; justify-content: center; }
+  .sheet-overlay.open { display: flex; }
+  .sheet { background: var(--card); width: 100%; max-width: 420px; border-radius: 24px 24px 0 0; padding: 10px 18px 24px; animation: sheetUp 0.28s ease; }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-handle { width: 42px; height: 5px; border-radius: 3px; background: var(--border-2); margin: 4px auto 16px; }
+  .sheet-title { font-family: 'Cormorant Garamond', serif; font-size: 25px; font-weight: 600; color: var(--serif); text-align: center; line-height: 1.2; margin-bottom: 16px; }
+  .wheels { position: relative; display: flex; gap: 4px; height: 220px; }
+  .wheel { flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory; -ms-overflow-style: none; scrollbar-width: none; text-align: center; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent); }
+  .wheel::-webkit-scrollbar { display: none; }
+  .wheel-spacer { height: 88px; }
+  .wheel-item { height: 44px; line-height: 44px; scroll-snap-align: center; font-size: 15px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; transition: color 0.12s, font-size 0.12s; }
+  .wheel-item.wheel-sel { color: var(--serif); font-weight: 600; font-size: 17px; }
+  .wheel-band { position: absolute; left: 0; right: 0; top: 88px; height: 44px; border-top: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2); background: rgba(0,0,0,0.03); border-radius: 8px; pointer-events: none; }
+  body.dark .wheel-band { border-color: var(--accent); background: rgba(201,162,75,0.12); }
+  .sheet-apply { width: 100%; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 18px; }
+  .sheet-ignore { width: 100%; background: none; border: none; color: var(--muted); font-size: 14px; padding: 12px; cursor: pointer; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -577,23 +604,17 @@
         </div>
         <div style="padding:2px 18px 8px; font-size:11px; color:var(--faint);">Drag to look around · اسحب للنظر حولك</div>
       </div>
-      <div class="sub-label">Pick a date | اختر التاريخ</div>
-      <div style="padding:0 18px 4px;">
-        <input type="date" id="booking-date" class="field-input" style="margin-bottom:0;">
+      <div class="sub-label">When would you like to reserve? | متى تريد الحجز؟</div>
+      <div class="filter-bar">
+        <div class="filter-pill" onclick="openBookingSheet()"><span class="fp-ic">📅</span><span id="pill-date">Today</span><span class="fp-chev">▾</span></div>
+        <div class="filter-pill" onclick="openBookingSheet()"><span class="fp-ic">🕐</span><span id="pill-time">Hour</span><span class="fp-chev">▾</span></div>
+        <div class="filter-pill" onclick="openBookingSheet()"><span class="fp-ic">👥</span><span id="pill-pax">2 guests</span><span class="fp-chev">▾</span></div>
       </div>
-      <div class="sub-label">Pick a time | اختر الوقت</div>
-      <div style="padding:0 18px 4px;">
-        <input type="time" id="booking-time" class="field-input" style="margin-bottom:0;" onchange="selectTimeFromPicker()">
+      <div class="filter-row2">
+        <div class="filter-settings" onclick="openBookingSheet()"><span>⚙️</span> Filter</div>
       </div>
-      <div class="sub-label">How many guests? | عدد الضيوف</div>
-      <div style="display:flex; gap:8px; padding:0 18px 4px;">
-        <div class="guest-btn" onclick="selectGuests(this, 1)">1</div>
-        <div class="guest-btn" onclick="selectGuests(this, 2)">2</div>
-        <div class="guest-btn" onclick="selectGuests(this, 3)">3</div>
-        <div class="guest-btn" onclick="selectGuests(this, 4)">4</div>
-        <div class="guest-btn" onclick="selectGuests(this, 5)">5</div>
-        <div class="guest-btn" onclick="selectGuests(this, 6)">6+</div>
-      </div>
+      <input type="date" id="booking-date" style="display:none;">
+      <input type="time" id="booking-time" style="display:none;">
       <div class="sub-label">Choose a table | اختر الطاولة</div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#C0DD97;"></div>Free</div>
@@ -624,14 +645,14 @@
         <div class="summary-row"><span>Table</span><span id="p-table"></span></div>
         <div class="summary-row"><span>Time</span><span id="p-time"></span></div>
         <hr class="divider">
-        <div class="total-row"><span>Reservation fee</span><span>1,000 IQD</span></div>
+        <div class="total-row"><span>Reservation fee</span><span>500 IQD</span></div>
       </div>
       <div class="section-label" style="padding-left:18px;">Payment · الدفع</div>
       <div class="method-card" id="card-cash" style="cursor:default;">
         <div class="method-icon">💵</div>
         <div>
           <div class="method-title">Pay cash at restaurant</div>
-          <div class="method-sub">Pay 1,000 IQD when you arrive</div>
+          <div class="method-sub">Pay 500 IQD when you arrive</div>
         </div>
         <div class="radio checked" id="radio-cash"></div>
       </div>
@@ -715,6 +736,22 @@
         <button class="modal-cancel" onclick="closeReviewForm()">Cancel</button>
         <button class="modal-submit" onclick="submitReview()">Submit review</button>
       </div>
+    </div>
+  </div>
+
+  <!-- BOOKING BOTTOM SHEET (wheel pickers) -->
+  <div id="booking-sheet" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">What time do you want to<br>reserve a table for?</div>
+      <div class="wheels">
+        <div class="wheel-band"></div>
+        <div class="wheel" id="wheel-day"></div>
+        <div class="wheel" id="wheel-time"></div>
+        <div class="wheel" id="wheel-guests"></div>
+      </div>
+      <button class="sheet-apply" onclick="applyBookingSheet()">Apply</button>
+      <button class="sheet-ignore" onclick="closeBookingSheet()">Ignore</button>
     </div>
   </div>
 
@@ -1614,9 +1651,12 @@ async function openDetail(restaurantId) {
   selectedTableId = null; selectedTime = null;
   document.getElementById('booking-time').value = '';
   selectedGuests = 2;
-  document.querySelectorAll('.guest-btn').forEach((b, i) => b.classList.toggle('selected', i === 1));
   document.getElementById('book-btn').disabled = true;
   document.getElementById('book-btn').textContent = 'Select a table to reserve';
+  // reset booking filter pills to defaults
+  document.getElementById('pill-date').textContent = 'Today';
+  document.getElementById('pill-time').textContent = 'Hour';
+  document.getElementById('pill-pax').textContent = '2 guests';
 
   // hero photo
   const heroImg = document.getElementById('d-hero-img');
@@ -1863,6 +1903,134 @@ function updateBookBtn() {
   }
 }
 
+// ===== BOOKING BOTTOM SHEET (TheFork-style wheel pickers) =====
+const WHEEL_ITEM_H = 44;
+let wheelData = { day: [], time: [], guests: [] };
+let wheelIndex = { day: 0, time: 0, guests: 1 };
+
+function buildDays() {
+  const arr = [];
+  const today = new Date();
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const iso = d.toISOString().split('T')[0];
+    let label;
+    if (i === 0) label = 'Today';
+    else if (i === 1) label = 'Tomorrow';
+    else label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); // "Fri, 26 Jun"
+    arr.push({ label, value: iso });
+  }
+  return arr;
+}
+function buildTimes() {
+  const arr = [];
+  for (let h = 10; h <= 23; h++) {
+    for (const m of [0, 30]) {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      const mm = m === 0 ? '00' : '30';
+      const label = `${h12}:${mm} ${ampm}`;
+      arr.push({ label, value: label });
+    }
+  }
+  return arr;
+}
+function buildGuests() {
+  const arr = [];
+  for (let g = 1; g <= 12; g++) {
+    arr.push({ label: g === 12 ? '12+ guests' : (g + ' guest' + (g > 1 ? 's' : '')), value: g });
+  }
+  return arr;
+}
+
+function keyForWheel(id) { return id === 'wheel-day' ? 'day' : id === 'wheel-time' ? 'time' : 'guests'; }
+
+function renderWheel(id, items) {
+  const el = document.getElementById(id);
+  el.innerHTML = '<div class="wheel-spacer"></div>'
+    + items.map((it, i) => `<div class="wheel-item" data-i="${i}">${escapeHtml(it.label)}</div>`).join('')
+    + '<div class="wheel-spacer"></div>';
+  el.onscroll = () => onWheelScroll(id);
+}
+
+function onWheelScroll(id) {
+  const el = document.getElementById(id);
+  const key = keyForWheel(id);
+  const len = wheelData[key].length;
+  const idx = Math.max(0, Math.min(len - 1, Math.round(el.scrollTop / WHEEL_ITEM_H)));
+  wheelIndex[key] = idx;
+  updateWheelSel(id, idx);
+}
+
+function updateWheelSel(id, idx) {
+  document.getElementById(id).querySelectorAll('.wheel-item').forEach(it => {
+    it.classList.toggle('wheel-sel', parseInt(it.dataset.i, 10) === idx);
+  });
+}
+
+function setWheel(id, idx) {
+  const el = document.getElementById(id);
+  el.scrollTop = idx * WHEEL_ITEM_H;
+  updateWheelSel(id, idx);
+}
+
+function defaultTimeIndex() {
+  const i = wheelData.time.findIndex(t => t.value === '7:00 PM');
+  return i >= 0 ? i : 0;
+}
+
+function openBookingSheet() {
+  wheelData.day = buildDays();
+  wheelData.time = buildTimes();
+  wheelData.guests = buildGuests();
+
+  let di = wheelData.day.findIndex(d => d.value === selectedDate);
+  if (di < 0) di = 0;
+  let ti = selectedTime ? wheelData.time.findIndex(t => t.value === selectedTime) : defaultTimeIndex();
+  if (ti < 0) ti = defaultTimeIndex();
+  let gi = wheelData.guests.findIndex(g => g.value === selectedGuests);
+  if (gi < 0) gi = 1;
+  wheelIndex = { day: di, time: ti, guests: gi };
+
+  renderWheel('wheel-day', wheelData.day);
+  renderWheel('wheel-time', wheelData.time);
+  renderWheel('wheel-guests', wheelData.guests);
+
+  document.getElementById('booking-sheet').classList.add('open');
+  requestAnimationFrame(() => {
+    setWheel('wheel-day', di);
+    setWheel('wheel-time', ti);
+    setWheel('wheel-guests', gi);
+  });
+}
+
+function closeBookingSheet() {
+  document.getElementById('booking-sheet').classList.remove('open');
+}
+
+function applyBookingSheet() {
+  const d = wheelData.day[wheelIndex.day];
+  const t = wheelData.time[wheelIndex.time];
+  const g = wheelData.guests[wheelIndex.guests];
+  selectedDate = d.value;
+  selectedTime = t.value;
+  selectedGuests = g.value;
+
+  const dateInput = document.getElementById('booking-date');
+  if (dateInput) dateInput.value = selectedDate;
+
+  document.getElementById('pill-date').textContent = d.label;
+  document.getElementById('pill-time').textContent = t.value;
+  document.getElementById('pill-pax').textContent = g.label;
+
+  selectedTableId = null;
+  closeBookingSheet();
+  loadTables();        // refresh table availability for the chosen date/time
+  updateBookBtn();
+  showToast('Reservation set — now pick a table');
+}
+
 // ===== PAYMENT =====
 function goToPayment() {
   document.getElementById('p-rest').textContent = currentRestaurant.name;
@@ -1888,9 +2056,9 @@ async function confirmBooking() {
     document.getElementById('c-rest').textContent = currentRestaurant.name;
     document.getElementById('c-table').textContent = selectedTableNumber;
     document.getElementById('c-time').textContent = `${selectedTime} · ${selectedDate}`;
-    document.getElementById('c-payment').textContent = '1,000 IQD · Cash at door';
+    document.getElementById('c-payment').textContent = '500 IQD · Cash at door';
     document.getElementById('s-title').textContent = 'Table reserved!';
-    document.getElementById('s-sub').textContent = 'Pay 1,000 IQD when you arrive. Table held for 15 min.';
+    document.getElementById('s-sub').textContent = 'Pay 500 IQD when you arrive. Table held for 15 min.';
     showScreen('success-screen');
     sendBookingEmails();
   } catch (err) {
@@ -1935,7 +2103,7 @@ async function sendBookingEmails() {
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Table:</strong> ${selectedTableNumber}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Date:</strong> ${selectedDate}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Time:</strong> ${selectedTime}</p>
-          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Payment:</strong> 1,000 IQD cash at door</p>
+          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Payment:</strong> 500 IQD cash at door</p>
         </div>
         <p style="color: #9A9590; font-size: 13px;">Please arrive on time. Your table is held for 15 minutes.</p>
         <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
@@ -2182,7 +2350,7 @@ async function refreshOwnerBookings() {
     else badge.style.display = 'none';
   }
   const paidBookings = ownerBookings.filter(b => b.payment_status === 'paid' || b.status === 'confirmed');
-  document.getElementById('owner-revenue').textContent = (paidBookings.length * 1000).toLocaleString() + ' IQD';
+  document.getElementById('owner-revenue').textContent = (paidBookings.length * 500).toLocaleString() + ' IQD';
 }
 
 function switchOwnerTab(tab) {
@@ -2282,7 +2450,7 @@ function renderOwnerStats() {
     <div class="info-field"><label>Total bookings (all time)</label><div style="font-size:18px; font-weight:600; color:var(--text);">${total}</div></div>
     <div class="info-field"><label>Confirmed</label><div style="font-size:18px; font-weight:600; color:var(--good-text);">${confirmed}</div></div>
     <div class="info-field"><label>Cancelled</label><div style="font-size:18px; font-weight:600; color:#A32D2D;">${cancelled}</div></div>
-    <div class="info-field"><label>Estimated revenue</label><div style="font-size:18px; font-weight:600; color:var(--text);">${(confirmed * 1000).toLocaleString()} IQD</div></div>
+    <div class="info-field"><label>Estimated revenue</label><div style="font-size:18px; font-weight:600; color:var(--text);">${(confirmed * 500).toLocaleString()} IQD</div></div>
     <div class="info-field"><label>Payments</label><div style="font-size:13px; color:var(--text);">💵 ${cashPay} cash bookings</div></div>
     <div class="info-field"><label>Most popular time</label><div style="font-size:13px; color:var(--text);">${topTime ? escapeHtml(topTime[0]) + ' (' + topTime[1] + ' bookings)' : 'Not enough data yet'}</div></div>`;
 }
