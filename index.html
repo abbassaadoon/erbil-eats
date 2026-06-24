@@ -638,43 +638,7 @@
       <div id="d-reviews-list"></div>
     </div>
     <div class="bottom-panel">
-      <button class="confirm-btn" id="book-btn" disabled onclick="goToPayment()">Select a table to reserve</button>
-    </div>
-  </div>
-
-  <!-- PAYMENT -->
-  <div id="payment-screen" class="payment-screen">
-    <div class="detail-header">
-      <button class="back-btn" onclick="backToDetail()">← Back</button>
-      <div class="rest-detail-name" style="font-size:22px; margin-top:10px;">Complete booking</div>
-      <div class="rest-detail-meta" id="p-meta"></div>
-    </div>
-    <div class="content" style="padding-bottom:20px;">
-      <div class="summary-card">
-        <div class="summary-row"><span>Restaurant</span><span id="p-rest"></span></div>
-        <div class="summary-row"><span>Guests</span><span id="p-table"></span></div>
-        <div class="summary-row"><span>Time</span><span id="p-time"></span></div>
-        <hr class="divider">
-        <div class="summary-row"><span>Reservation fee</span><span id="p-fee-calc">500 IQD × 2</span></div>
-        <hr class="divider">
-        <div class="total-row"><span>Total</span><span id="p-total">1,000 IQD</span></div>
-      </div>
-      <div class="section-label" style="padding-left:18px;">Payment · الدفع</div>
-      <div class="method-card" id="card-cash" style="cursor:default;">
-        <div class="method-icon">💵</div>
-        <div>
-          <div class="method-title">Pay cash at restaurant</div>
-          <div class="method-sub" id="p-method-sub">Pay 500 IQD per person when you arrive</div>
-        </div>
-        <div class="radio checked" id="radio-cash"></div>
-      </div>
-      <div class="cash-note" id="cash-note">
-        <div class="cash-note-title">Please note</div>
-        <div class="cash-note-sub">Your table is held for 15 minutes. Please arrive on time.</div>
-      </div>
-    </div>
-    <div class="bottom-panel">
-      <button class="confirm-btn" id="pay-btn" onclick="confirmBooking()">Reserve & pay at door</button>
+      <button class="confirm-btn" id="book-btn" disabled onclick="confirmBooking()">Pick a date &amp; time to reserve</button>
     </div>
   </div>
 
@@ -687,7 +651,6 @@
       <div class="conf-row"><span>Restaurant</span><span id="c-rest">—</span></div>
       <div class="conf-row"><span>Guests</span><span id="c-table">—</span></div>
       <div class="conf-row"><span>Time</span><span id="c-time">—</span></div>
-      <div class="conf-row"><span>Payment</span><span id="c-payment">—</span></div>
     </div>
     <button class="done-btn" onclick="navTo('home')">🏠 Back to home</button>
   </div>
@@ -882,7 +845,7 @@ function comingSoon(label) {
   showToast((label ? label + ': ' : '') + 'coming soon 🚧');
 }
 
-const ALL_SCREENS = ['loading-screen','auth-screen','signup-role-screen','home-screen','search-screen','bookings-screen','saved-screen','profile-screen','friends-screen','friend-detail-screen','detail-screen','payment-screen','success-screen','owner-screen','admin-screen'];
+const ALL_SCREENS = ['loading-screen','auth-screen','signup-role-screen','home-screen','search-screen','bookings-screen','saved-screen','profile-screen','friends-screen','friend-detail-screen','detail-screen','success-screen','owner-screen','admin-screen'];
 
 function showScreen(id) {
   ALL_SCREENS.forEach(s => { const el = document.getElementById(s); if (el) el.style.display = 'none'; });
@@ -1979,49 +1942,38 @@ function applyBookingSheet() {
 }
 
 // ===== PAYMENT =====
-async function goToPayment() {
+// Booking is free — confirm directly, no payment step.
+async function confirmBooking() {
   if (!selectedTime) { showToast('Please pick a date & time first'); return; }
   const btn = document.getElementById('book-btn');
   const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Checking availability...';
+  btn.disabled = true; btn.textContent = 'Reserving...';
+
   const ok = await assignTable();
-  btn.disabled = false; btn.textContent = orig;
-  if (!ok) { showToast('Sorry, no tables free at that time. Try another time.'); return; }
+  if (!ok) {
+    showToast('Sorry, no tables free at that time. Try another time.');
+    btn.disabled = false; btn.textContent = orig;
+    return;
+  }
 
-  document.getElementById('p-rest').textContent = currentRestaurant.name;
-  document.getElementById('p-table').textContent = `${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
-  document.getElementById('p-time').textContent = `${selectedTime} · ${selectedDate}`;
-  document.getElementById('p-meta').textContent = `${currentRestaurant.name} · ${selectedTableNumber} · ${selectedTime}`;
-  document.getElementById('p-fee-calc').textContent = `${FEE_PER_PERSON.toLocaleString()} IQD × ${selectedGuests}`;
-  document.getElementById('p-total').textContent = feeText(selectedGuests);
-  document.getElementById('p-method-sub').textContent = `Pay ${feeText(selectedGuests)} (${FEE_PER_PERSON} per person) when you arrive`;
-  showScreen('payment-screen');
-}
-
-function backToDetail() { showScreen('detail-screen'); }
-
-async function confirmBooking() {
-  const btn = document.getElementById('pay-btn');
-  btn.disabled = true; btn.textContent = 'Processing...';
   try {
     const { error } = await sb.from('reservations').insert({
       user_id: currentUser.id, table_id: selectedTableId, restaurant_id: currentRestaurant.id,
       reservation_date: selectedDate, reservation_time: selectedTime, guest_count: selectedGuests,
-      payment_method: 'cash', payment_status: 'pending', status: 'confirmed'
+      payment_method: 'free', payment_status: 'none', status: 'confirmed'
     });
     if (error) throw error;
 
     document.getElementById('c-rest').textContent = currentRestaurant.name;
     document.getElementById('c-table').textContent = `${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
     document.getElementById('c-time').textContent = `${selectedTime} · ${selectedDate}`;
-    document.getElementById('c-payment').textContent = `${feeText(selectedGuests)} · Cash at door`;
     document.getElementById('s-title').textContent = 'Table reserved!';
-    document.getElementById('s-sub').textContent = `Pay ${feeText(selectedGuests)} (${FEE_PER_PERSON} per person) when you arrive. Table held for 15 min.`;
+    document.getElementById('s-sub').textContent = 'Your reservation is confirmed — free of charge. Please arrive on time; your table is held for 15 minutes.';
     showScreen('success-screen');
     sendBookingEmails();
   } catch (err) {
     showToast('Booking failed: ' + err.message);
-    btn.disabled = false; btn.textContent = 'Reserve & pay at door';
+    btn.disabled = false; btn.textContent = orig;
   }
 }
 
@@ -2061,9 +2013,8 @@ async function sendBookingEmails() {
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Date:</strong> ${selectedDate}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Time:</strong> ${selectedTime}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Guests:</strong> ${selectedGuests}</p>
-          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Payment:</strong> ${feeText(selectedGuests)} cash at door (${FEE_PER_PERSON} per person)</p>
         </div>
-        <p style="color: #9A9590; font-size: 13px;">Please arrive on time. Your table is held for 15 minutes.</p>
+        <p style="color: #9A9590; font-size: 13px;">Booking is free. Please arrive on time — your table is held for 15 minutes.</p>
         <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
       </div>`;
     await sb.functions.invoke('send-email', {
@@ -2114,7 +2065,6 @@ async function openMyBookings() {
             <div>
               <div class="booking-name">${escapeHtml(restName)}</div>
               <div class="booking-detail">Table ${escapeHtml(tableNum)} · ${b.guest_count || 2} guests</div>
-              <div class="booking-detail">💵 Pay at door</div>
             </div>
           </div>
           <div>
