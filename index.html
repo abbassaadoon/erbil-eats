@@ -645,14 +645,16 @@
         <div class="summary-row"><span>Table</span><span id="p-table"></span></div>
         <div class="summary-row"><span>Time</span><span id="p-time"></span></div>
         <hr class="divider">
-        <div class="total-row"><span>Reservation fee</span><span>500 IQD</span></div>
+        <div class="summary-row"><span>Reservation fee</span><span id="p-fee-calc">500 IQD × 2</span></div>
+        <hr class="divider">
+        <div class="total-row"><span>Total</span><span id="p-total">1,000 IQD</span></div>
       </div>
       <div class="section-label" style="padding-left:18px;">Payment · الدفع</div>
       <div class="method-card" id="card-cash" style="cursor:default;">
         <div class="method-icon">💵</div>
         <div>
           <div class="method-title">Pay cash at restaurant</div>
-          <div class="method-sub">Pay 500 IQD when you arrive</div>
+          <div class="method-sub" id="p-method-sub">Pay 500 IQD per person when you arrive</div>
         </div>
         <div class="radio checked" id="radio-cash"></div>
       </div>
@@ -774,6 +776,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const ADMIN_USER_ID = '30997342-e713-433e-abec-15b92432a24e';  // Abbas (admin)
 const ADMIN_EMAIL = 'abbassaadoon7@gmail.com';
+const FEE_PER_PERSON = 500;  // IQD, cash at door, charged per guest
+function feeFor(guests) { return (guests || 1) * FEE_PER_PERSON; }
+function feeText(guests) { return feeFor(guests).toLocaleString() + ' IQD'; }
 
 let currentUser = null;
 let currentProfile = null;
@@ -2037,6 +2042,9 @@ function goToPayment() {
   document.getElementById('p-table').textContent = `${selectedTableNumber} · ${selectedGuests} guest${selectedGuests > 1 ? 's' : ''}`;
   document.getElementById('p-time').textContent = `${selectedTime} · ${selectedDate}`;
   document.getElementById('p-meta').textContent = `${currentRestaurant.name} · ${selectedTableNumber} · ${selectedTime}`;
+  document.getElementById('p-fee-calc').textContent = `${FEE_PER_PERSON.toLocaleString()} IQD × ${selectedGuests}`;
+  document.getElementById('p-total').textContent = feeText(selectedGuests);
+  document.getElementById('p-method-sub').textContent = `Pay ${feeText(selectedGuests)} (${FEE_PER_PERSON} per person) when you arrive`;
   showScreen('payment-screen');
 }
 
@@ -2056,9 +2064,9 @@ async function confirmBooking() {
     document.getElementById('c-rest').textContent = currentRestaurant.name;
     document.getElementById('c-table').textContent = selectedTableNumber;
     document.getElementById('c-time').textContent = `${selectedTime} · ${selectedDate}`;
-    document.getElementById('c-payment').textContent = '500 IQD · Cash at door';
+    document.getElementById('c-payment').textContent = `${feeText(selectedGuests)} · Cash at door`;
     document.getElementById('s-title').textContent = 'Table reserved!';
-    document.getElementById('s-sub').textContent = 'Pay 500 IQD when you arrive. Table held for 15 min.';
+    document.getElementById('s-sub').textContent = `Pay ${feeText(selectedGuests)} (${FEE_PER_PERSON} per person) when you arrive. Table held for 15 min.`;
     showScreen('success-screen');
     sendBookingEmails();
   } catch (err) {
@@ -2103,7 +2111,8 @@ async function sendBookingEmails() {
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Table:</strong> ${selectedTableNumber}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Date:</strong> ${selectedDate}</p>
           <p style="margin: 6px 0; color: #2C2C2A;"><strong>Time:</strong> ${selectedTime}</p>
-          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Payment:</strong> 500 IQD cash at door</p>
+          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Guests:</strong> ${selectedGuests}</p>
+          <p style="margin: 6px 0; color: #2C2C2A;"><strong>Payment:</strong> ${feeText(selectedGuests)} cash at door (${FEE_PER_PERSON} per person)</p>
         </div>
         <p style="color: #9A9590; font-size: 13px;">Please arrive on time. Your table is held for 15 minutes.</p>
         <p style="color: #9A9590; font-size: 13px;">— Erbil Eats</p>
@@ -2350,7 +2359,8 @@ async function refreshOwnerBookings() {
     else badge.style.display = 'none';
   }
   const paidBookings = ownerBookings.filter(b => b.payment_status === 'paid' || b.status === 'confirmed');
-  document.getElementById('owner-revenue').textContent = (paidBookings.length * 500).toLocaleString() + ' IQD';
+  const revenue = paidBookings.reduce((s, b) => s + feeFor(b.guest_count), 0);
+  document.getElementById('owner-revenue').textContent = revenue.toLocaleString() + ' IQD';
 }
 
 function switchOwnerTab(tab) {
@@ -2450,7 +2460,7 @@ function renderOwnerStats() {
     <div class="info-field"><label>Total bookings (all time)</label><div style="font-size:18px; font-weight:600; color:var(--text);">${total}</div></div>
     <div class="info-field"><label>Confirmed</label><div style="font-size:18px; font-weight:600; color:var(--good-text);">${confirmed}</div></div>
     <div class="info-field"><label>Cancelled</label><div style="font-size:18px; font-weight:600; color:#A32D2D;">${cancelled}</div></div>
-    <div class="info-field"><label>Estimated revenue</label><div style="font-size:18px; font-weight:600; color:var(--text);">${(confirmed * 500).toLocaleString()} IQD</div></div>
+    <div class="info-field"><label>Estimated revenue</label><div style="font-size:18px; font-weight:600; color:var(--text);">${ownerBookings.filter(b => b.status === 'confirmed').reduce((s, b) => s + feeFor(b.guest_count), 0).toLocaleString()} IQD</div></div>
     <div class="info-field"><label>Payments</label><div style="font-size:13px; color:var(--text);">💵 ${cashPay} cash bookings</div></div>
     <div class="info-field"><label>Most popular time</label><div style="font-size:13px; color:var(--text);">${topTime ? escapeHtml(topTime[0]) + ' (' + topTime[1] + ' bookings)' : 'Not enough data yet'}</div></div>`;
 }
