@@ -441,6 +441,9 @@
     <div class="auth-switch" id="auth-switch-text">
       Don't have an account? <span onclick="goToSignupRole()">Sign up</span>
     </div>
+    <div class="auth-switch" style="margin-top:10px;">
+      <span onclick="forgotPassword()">Forgot password?</span>
+    </div>
   </div>
 
   <!-- ADMIN APPROVAL DASHBOARD -->
@@ -823,6 +826,19 @@ async function init() {
   }
 
   sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // User arrived via the reset link in their email
+      const np = prompt('Set your NEW password (at least 6 characters):');
+      if (np && np.length >= 6) {
+        sb.auth.updateUser({ password: np }).then(({ error }) => {
+          if (error) showToast('Could not set password: ' + error.message);
+          else showToast('Password updated! You are signed in.');
+        });
+      } else if (np !== null) {
+        showToast('Password must be at least 6 characters. Tap the email link again to retry.');
+      }
+      return;
+    }
     if (event === 'SIGNED_IN' && session && !currentUser) {
       currentUser = session.user;
       loadHome();
@@ -1019,6 +1035,17 @@ async function handleGoogleSignIn() {
     options: { redirectTo: window.location.href }
   });
   if (error) showToast('Google sign-in failed: ' + error.message);
+}
+
+async function forgotPassword() {
+  let email = (document.getElementById('auth-email').value || '').trim();
+  if (!email) email = (prompt('Enter your account email:') || '').trim();
+  if (!email) return;
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  if (error) { showToast('Could not send reset email: ' + error.message); return; }
+  showToast('Reset link sent to ' + email + ' — check your inbox (and spam).');
 }
 
 async function handleLogout() {
