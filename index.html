@@ -273,6 +273,11 @@
 
   .explore-btn { display: block; background: var(--btn-bg); color: var(--btn-text); border: none; border-radius: 14px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 14px 18px; width: calc(100% - 36px); text-align: center; }
 
+  /* ===== HOME SEGMENTED TABS ===== */
+  .seg-tabs { display: flex; gap: 4px; margin: 2px 18px 14px; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 16px; padding: 4px; }
+  .seg-tab { flex: 1; text-align: center; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .seg-tab.active { background: var(--btn-bg); color: var(--btn-text); }
+
   /* ===== HOME DASHBOARD: UPCOMING BOOKING ===== */
   .upcoming-card { margin: 6px 18px 4px; border-radius: 18px; padding: 15px 16px; background: var(--card); border: 0.5px solid var(--border); cursor: pointer; display: flex; align-items: center; gap: 14px; }
   body.dark .upcoming-card { border-color: var(--accent); }
@@ -482,17 +487,27 @@
       </div>
     </div>
     <div class="content">
-      <div id="home-upcoming"></div>
-      <div class="section-label">Featured in Erbil · الأبرز</div>
-      <div class="featured-row" id="featured-row"></div>
-      <div class="ad-slot" onclick="comingSoon('Advertising')">
-        <div class="ad-tag">Sponsored</div>
-        <div class="ad-title">Promote your restaurant here</div>
-        <div class="ad-sub">Reach diners across Erbil · أعلن معنا</div>
+      <div class="seg-tabs">
+        <div class="seg-tab active" id="seg-home" onclick="setHomeTab('home')">🏠 Home</div>
+        <div class="seg-tab" id="seg-friends" onclick="setHomeTab('friends')">👥 Friends</div>
       </div>
-      <div class="section-label">Browse by category · التصنيفات</div>
-      <div class="chips" id="home-chips"></div>
-      <button class="explore-btn" onclick="navTo('search')">🔍 Search all restaurants</button>
+      <div id="home-view">
+        <div style="padding:0 18px 8px;">
+          <div class="search-bar" style="margin-top:0;" onclick="navTo('search')">
+            <span>🔍</span>
+            <input placeholder="Search restaurants... · ابحث عن مطعم" readonly style="cursor:pointer;">
+          </div>
+        </div>
+        <div id="home-upcoming"></div>
+        <div class="ad-slot" onclick="comingSoon('Advertising')">
+          <div class="ad-tag">Sponsored</div>
+          <div class="ad-title">Promote your restaurant here</div>
+          <div class="ad-sub">Reach diners across Erbil · أعلن معنا</div>
+        </div>
+        <div class="section-label">Browse by category · التصنيفات</div>
+        <div class="chips" id="home-chips"></div>
+      </div>
+      <div id="home-friends-view" style="display:none;"></div>
     </div>
   </div>
 
@@ -1111,10 +1126,135 @@ async function loadHome() {
   await loadReviewAggregates();
 
   renderChips('home-chips', '', 'jumpToCategory');
-  renderFeatured();
+  setHomeTab(homeTab || 'home');
   await renderHomeUpcoming();
   showScreen('home-screen');
   updateNotificationBadge();
+}
+
+// ===== HOME TABS (Home | Friends) =====
+let homeTab = 'home';
+
+function setHomeTab(tab) {
+  homeTab = tab;
+  document.getElementById('seg-home').classList.toggle('active', tab === 'home');
+  document.getElementById('seg-friends').classList.toggle('active', tab === 'friends');
+  document.getElementById('home-view').style.display = tab === 'home' ? 'block' : 'none';
+  document.getElementById('home-friends-view').style.display = tab === 'friends' ? 'block' : 'none';
+  if (tab === 'friends') renderHomeFriends();
+}
+
+// Friends tab on Home: find friends + discover their favourite restaurants
+async function renderHomeFriends() {
+  const c = document.getElementById('home-friends-view');
+  c.innerHTML = `
+    <div style="padding:0 18px 6px;">
+      <div class="search-bar" style="margin-top:0;">
+        <span>🔍</span>
+        <input id="hf-search" placeholder="Find friends by name..." oninput="searchFriendsHome()">
+      </div>
+    </div>
+    <div id="hf-results"></div>
+    <div class="section-label">My friends · أصدقائي</div>
+    <div id="hf-list"><div class="empty-state" style="padding:20px;">Loading...</div></div>
+    <div class="section-label">Discover from your friends · اكتشف من أصدقائك</div>
+    <div id="hf-discover-wrap"><div class="empty-state" style="padding:20px;">Loading...</div></div>`;
+
+  // load friendships fresh
+  const { data } = await sb.from('friendships').select('*').eq('user_id', currentUser.id);
+  const rows = data || [];
+  friendIdSet = new Set(rows.map(r => r.friend_id));
+
+  // my friends list
+  const listEl = document.getElementById('hf-list');
+  if (!rows.length) {
+    listEl.innerHTML = '<div class="empty-state" style="padding:20px;">No friends yet.<br>Search above to find people.</div>';
+  } else {
+    const { data: profs } = await sb.from('profiles').select('id, full_name, role').in('id', rows.map(r => r.friend_id));
+    const pmap = {};
+    (profs || []).forEach(p => { pmap[p.id] = p; nameById[p.id] = p.full_name || 'Erbil Eats user'; });
+    listEl.innerHTML = rows.map(f => {
+      const p = pmap[f.friend_id];
+      const name = p?.full_name || 'Erbil Eats user';
+      return `
+        <div class="friend-row">
+          <div class="friend-av">${escapeHtml(name.charAt(0).toUpperCase())}</div>
+          <div><div class="friend-name">${escapeHtml(name)}</div><div class="friend-sub">${p?.role === 'restaurant_owner' ? 'Restaurant owner' : 'Friend'}</div></div>
+          <div class="friend-action">
+            <button class="mini-btn" onclick="viewFriend('${f.friend_id}')">View</button>
+            <button class="mini-btn" onclick="removeFriendHome('${f.friend_id}')">Remove</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // discover: restaurants your friends saved
+  const discEl = document.getElementById('hf-discover-wrap');
+  if (!friendIdSet.size) {
+    discEl.innerHTML = '<div class="empty-state" style="padding:20px;">Add friends to discover the places they love.</div>';
+    return;
+  }
+  const { data: favs } = await sb.from('favourites').select('restaurant_id, user_id').in('user_id', [...friendIdSet]);
+  const savedBy = {};
+  (favs || []).forEach(f => {
+    if (!savedBy[f.restaurant_id]) savedBy[f.restaurant_id] = new Set();
+    savedBy[f.restaurant_id].add(f.user_id);
+  });
+  const rests = restaurants.filter(r => savedBy[r.id]);
+  if (!rests.length) {
+    discEl.innerHTML = '<div class="empty-state" style="padding:20px;">Your friends haven\'t saved any places yet.</div>';
+    return;
+  }
+  discEl.innerHTML = '<div class="rest-grid" id="hf-discover"></div>';
+  renderGrid('hf-discover', rests);
+}
+
+let hfSearchTimer = null;
+function searchFriendsHome() {
+  clearTimeout(hfSearchTimer);
+  hfSearchTimer = setTimeout(doSearchFriendsHome, 300);
+}
+
+async function doSearchFriendsHome() {
+  const q = (document.getElementById('hf-search').value || '').trim();
+  const box = document.getElementById('hf-results');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  const { data } = await sb.from('profiles').select('id, full_name, role').ilike('full_name', '%' + q + '%').limit(15);
+  const results = (data || []).filter(p => p.id !== currentUser.id);
+  if (!results.length) { box.innerHTML = '<div class="empty-state" style="padding:20px;">No people found.</div>'; return; }
+  box.innerHTML = '<div class="section-label">Search results</div>' + results.map(p => {
+    const name = p.full_name || 'Erbil Eats user';
+    nameById[p.id] = name;
+    const already = friendIdSet.has(p.id);
+    return `
+      <div class="friend-row">
+        <div class="friend-av">${escapeHtml(name.charAt(0).toUpperCase())}</div>
+        <div><div class="friend-name">${escapeHtml(name)}</div><div class="friend-sub">${p.role === 'restaurant_owner' ? 'Restaurant owner' : 'Diner'}</div></div>
+        <button class="friend-add ${already ? 'added' : ''}" ${already ? 'disabled' : ''} onclick="addFriendHome('${p.id}')">${already ? '✓ Friend' : '＋ Add'}</button>
+      </div>`;
+  }).join('');
+}
+
+async function addFriendHome(friendId) {
+  if (friendIdSet.has(friendId)) return;
+  const { error } = await sb.from('friendships').insert({ user_id: currentUser.id, friend_id: friendId, status: 'accepted' });
+  if (error) { showToast('Could not add friend: ' + error.message); return; }
+  friendIdSet.add(friendId);
+  showToast('Friend added 🤝');
+  const q = document.getElementById('hf-search').value;
+  renderHomeFriends().then(() => {
+    const inp = document.getElementById('hf-search');
+    if (inp && q) { inp.value = q; doSearchFriendsHome(); }
+  });
+}
+
+async function removeFriendHome(friendId) {
+  if (!confirm('Remove this friend?')) return;
+  const { error } = await sb.from('friendships').delete().eq('user_id', currentUser.id).eq('friend_id', friendId);
+  if (error) { showToast('Could not remove: ' + error.message); return; }
+  friendIdSet.delete(friendId);
+  showToast('Friend removed');
+  renderHomeFriends();
 }
 
 // Home dashboard: show the user's next upcoming reservation
@@ -1175,24 +1315,6 @@ function renderChips(containerId, active, onClickName) {
   c.innerHTML = CATEGORIES.map(cat =>
     `<div class="chip ${cat === active ? 'active' : ''}" onclick="${onClickName}('${cat}')">${cat}</div>`
   ).join('');
-}
-
-function renderFeatured() {
-  const top = [...restaurants].sort((a,b) => avgNum(b) - avgNum(a)).slice(0, 8);
-  const row = document.getElementById('featured-row');
-  if (!top.length) { row.innerHTML = ''; return; }
-  row.innerHTML = top.map(r => `
-    <div class="feat-card" onclick="openDetail('${r.id}')">
-      <div class="feat-photo">
-        <img src="${photoFor(r)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-        <div class="feat-emoji" style="display:none; background:${r.bg_color || '#EEE'};">${r.image_emoji || '🍴'}</div>
-      </div>
-      <div class="feat-info">
-        <div class="feat-name">${escapeHtml(r.name)}</div>
-        <div class="feat-meta">★ ${ratingFor(r)} · ${escapeHtml(r.cuisine || '')}</div>
-      </div>
-    </div>
-  `).join('');
 }
 
 // ----- generic 2-column grid with photo + heart -----
