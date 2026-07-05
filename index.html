@@ -1107,8 +1107,12 @@ async function loadHome() {
       showScreen('auth-screen');
       return;
     }
-    await loadOwnerDashboard(profile);
-    return;
+    if (profile.restaurant_id) {
+      await loadOwnerDashboard(profile);
+      return;
+    }
+    // Owner with no restaurant linked: don't lock them out — let them browse as a customer.
+    showToast('Your owner account isn\'t linked to a restaurant yet — browsing as a customer for now.');
   }
 
   const hour = new Date().getHours();
