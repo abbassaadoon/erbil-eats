@@ -1,0 +1,12 @@
+{
+  "name": "Erbil Eats",
+  "short_name": "Erbil Eats",
+  "description": "Book restaurant tables across Erbil — free reservations at the city's best cafes and restaurants.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F5F2",
+  "theme_color": "#0C0B0A",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

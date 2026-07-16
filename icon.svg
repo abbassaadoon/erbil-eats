@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0C0B0A"/>
+  <circle cx="256" cy="248" r="150" fill="none" stroke="#C9A24B" stroke-width="14"/>
+  <circle cx="256" cy="248" r="92" fill="none" stroke="#C9A24B" stroke-width="7" opacity="0.55"/>
+  <text x="256" y="292" font-family="Georgia, 'Times New Roman', serif" font-size="128" fill="#C9A24B" text-anchor="middle" font-weight="600">E</text>
+  <text x="256" y="452" font-family="Georgia, 'Times New Roman', serif" font-size="44" fill="#C9A24B" text-anchor="middle" letter-spacing="6">ERBIL EATS</text>
+</svg>

@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Erbil Eats</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Erbil Eats · Book a table</title>
+<meta name="description" content="Book restaurant tables across Erbil — free reservations at the city's best cafes and restaurants. أكلات أربيل">
+<meta name="theme-color" id="theme-color-meta" content="#F7F5F2">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Erbil Eats">
+<meta property="og:title" content="Erbil Eats · Book a table">
+<meta property="og:description" content="Free reservations at Erbil's best cafes and restaurants.">
+<meta property="og:image" content="https://erbil-eats.netlify.app/icon.svg">
+<meta property="og:type" content="website">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -53,10 +65,22 @@
     --good-text: #A6C77E;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  body { background: var(--bg); min-height: 100vh; transition: background 0.3s; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); min-height: 100vh; transition: background 0.3s; -webkit-font-smoothing: antialiased; overscroll-behavior-y: contain; }
   .app { max-width: 420px; margin: 0 auto; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; transition: background 0.3s; }
   .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+  /* ===== PRO POLISH: motion, touch, mobile refinements ===== */
+  @keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .main-screen, .detail-screen, .auth-screen, .owner-screen, .success-screen { animation: screenIn 0.22s ease; }
+  button, .grid-card, .feat-card, .list-card, .upcoming-card, .chip, .seg-tab, .friend-row, .booking-card, .filter-pill, .date-chip { transition: transform 0.12s ease, background 0.2s, color 0.2s, border-color 0.2s; }
+  .auth-btn:active, .confirm-btn:active, .save-info-btn:active, .explore-btn:active, .sheet-apply:active,
+  .btn-accept:active, .btn-decline:active, .friend-add:active, .mini-btn:active, .list-btn:active, .done-btn:active { transform: scale(0.97); }
+  .grid-card:active, .feat-card:active, .list-card:active, .upcoming-card:active, .friend-row:active, .date-chip:active { transform: scale(0.985); }
+  button, .chip, .seg-tab, .nav-item, .filter-pill, .avatar-btn, .theme-toggle, .date-chip, .wheel-item, .heart-btn, .prof-row { -webkit-user-select: none; user-select: none; }
+  .content { -webkit-overflow-scrolling: touch; }
+  /* 16px inputs stop iPhones auto-zooming on focus */
+  .field-input, .search-bar input, .review-textarea, .info-field input, .info-field textarea { font-size: 16px; }
 
   .theme-toggle { width: 40px; height: 40px; border-radius: 50%; background: var(--card); border: 0.5px solid var(--border-2); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
 
@@ -203,12 +227,12 @@
   .conf-row span:last-child { color: var(--text); font-weight: 500; }
   .done-btn { width: 100%; background: none; border: 0.5px solid var(--border-2); border-radius: 14px; padding: 12px; font-size: 13px; color: var(--text); cursor: pointer; }
 
-  .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%); background: #2C2C2A; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; max-width: 360px; text-align: center; }
+  .toast { position: fixed; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #2C2C2A; color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; max-width: 360px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
   body.dark .toast { background: #C9A24B; color: #0C0B0A; font-weight: 500; }
   .toast.show { opacity: 1; }
 
   /* ===== BOTTOM NAV ===== */
-  .bottomnav { display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: var(--card); border-top: 0.5px solid var(--border); z-index: 100; }
+  .bottomnav { display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: var(--card); border-top: 0.5px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
   .bottomnav.visible { display: flex; }
   .nav-item { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 10px; color: var(--muted); cursor: pointer; }
   .nav-item .nav-ic { font-size: 19px; display: block; margin-bottom: 3px; filter: grayscale(0.4); }
@@ -339,7 +363,7 @@
   /* ===== BOTTOM SHEET + WHEEL PICKERS ===== */
   .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 320; display: none; align-items: flex-end; justify-content: center; }
   .sheet-overlay.open { display: flex; }
-  .sheet { background: var(--card); width: 100%; max-width: 420px; border-radius: 24px 24px 0 0; padding: 10px 18px 24px; animation: sheetUp 0.28s ease; }
+  .sheet { background: var(--card); width: 100%; max-width: 420px; border-radius: 24px 24px 0 0; padding: 10px 18px calc(24px + env(safe-area-inset-bottom)); animation: sheetUp 0.28s ease; }
   @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .sheet-handle { width: 42px; height: 5px; border-radius: 3px; background: var(--border-2); margin: 4px auto 16px; }
   .sheet-title { font-family: 'Cormorant Garamond', serif; font-size: 25px; font-weight: 600; color: var(--serif); text-align: center; line-height: 1.2; margin-bottom: 16px; }
@@ -847,6 +871,11 @@ async function init() {
 }
 
 // ===== DARK MODE =====
+function setThemeColorMeta() {
+  const m = document.getElementById('theme-color-meta');
+  if (m) m.content = document.body.classList.contains('dark') ? '#0C0B0A' : '#F7F5F2';
+}
+
 function loadTheme() {
   let saved = 'light';
   try { saved = localStorage.getItem('erbil-theme') || 'light'; } catch (e) {}
@@ -854,12 +883,14 @@ function loadTheme() {
     document.body.classList.add('dark');
     document.querySelectorAll('.theme-toggle').forEach(t => t.textContent = '☀️');
   }
+  setThemeColorMeta();
 }
 
 function toggleTheme() {
   const isDark = document.body.classList.toggle('dark');
   document.querySelectorAll('.theme-toggle').forEach(t => t.textContent = isDark ? '☀️' : '🌙');
   try { localStorage.setItem('erbil-theme', isDark ? 'dark' : 'light'); } catch (e) {}
+  setThemeColorMeta();
   // keep profile switch in sync if visible
   const sw = document.getElementById('dark-switch');
   if (sw) sw.classList.toggle('on', isDark);
