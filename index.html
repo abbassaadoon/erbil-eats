@@ -187,6 +187,9 @@
   .detail-titlebar { padding: 14px 18px 4px; }
   .rest-detail-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--serif); }
   .rest-detail-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .d-info-row { font-size: 12px; color: var(--muted); margin-top: 5px; }
+  .d-info-row a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .d-info-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-top: 8px; }
   .map-area { height: 172px; background: var(--card-2); border-radius: 16px; margin: 14px 18px; overflow: hidden; }
   .sub-label { padding: 14px 18px 8px; font-size: 12px; color: var(--muted); font-weight: 500; }
   .guest-btn { flex: 1; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 12px; padding: 10px; font-size: 13px; color: var(--text); cursor: pointer; text-align: center; }
@@ -661,12 +664,14 @@
       <img id="d-hero-img" alt="" style="display:none;" onerror="this.style.display='none';document.getElementById('d-hero-emoji').style.display='flex';">
       <div class="hero-emoji" id="d-hero-emoji">🍴</div>
       <button class="hero-back" onclick="navBackFromDetail()">←</button>
+      <button class="hero-back" style="left:auto; right:14px;" onclick="shareRestaurant()" title="Share">↗</button>
       <div class="hero-fade"></div>
     </div>
     <div class="content" style="padding-bottom:20px;">
       <div class="detail-titlebar">
         <div class="rest-detail-name" id="d-name"></div>
         <div class="rest-detail-meta" id="d-meta"></div>
+        <div id="d-info"></div>
       </div>
       <div class="map-area" id="detail-map">
         <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:13px;">Loading map...</div>
@@ -1855,6 +1860,7 @@ async function openDetail(restaurantId) {
 
   document.getElementById('d-name').textContent = currentRestaurant.name;
   document.getElementById('d-meta').textContent = `${currentRestaurant.cuisine || ''}  ·  ★ ${currentRestaurant.rating || '—'}`;
+  renderDetailInfo();
 
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('booking-date').value = today;
@@ -2103,6 +2109,54 @@ function navBackFromDetail() {
   navTo(MAIN_SCREENS.includes(lastMain) ? lastMain : 'home');
 }
 
+// Show the restaurant's practical info (address, hours, phone, description)
+function renderDetailInfo() {
+  const r = currentRestaurant;
+  const rows = [];
+  if (r.address) rows.push(`<div class="d-info-row">📍 ${escapeHtml(r.address)}</div>`);
+  if (r.opening_hours) rows.push(`<div class="d-info-row">🕐 ${escapeHtml(r.opening_hours)}</div>`);
+  if (r.phone) rows.push(`<div class="d-info-row">📞 <a href="tel:${escapeHtml(r.phone)}">${escapeHtml(r.phone)}</a></div>`);
+  if (r.description) rows.push(`<div class="d-info-desc">${escapeHtml(r.description)}</div>`);
+  document.getElementById('d-info').innerHTML = rows.join('');
+}
+
+function shareRestaurant() {
+  if (!currentRestaurant) return;
+  const link = window.location.origin + window.location.pathname;
+  const msg = `Book a table at ${currentRestaurant.name} on Erbil Eats: ${link}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Erbil Eats · ' + currentRestaurant.name, text: msg, url: link }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(msg).then(() => showToast('Link copied — send it to a friend!')).catch(() => showToast(link));
+  } else {
+    showToast(link);
+  }
+}
+
+// Respect the owner's Diary settings: closed days and max covers
+async function checkDayAvailability() {
+  try {
+    const { data } = await sb.from('availability').select('*')
+      .eq('restaurant_id', currentRestaurant.id).eq('date', selectedDate).limit(1);
+    const av = (data || [])[0];
+    if (!av) return { ok: true };
+    if (av.is_open === false) {
+      return { ok: false, reason: `Sorry, ${currentRestaurant.name} is not taking bookings that day${av.note ? ' (' + av.note + ')' : ''}. Try another date.` };
+    }
+    if (av.max_covers != null) {
+      const { data: res } = await sb.from('reservations').select('guest_count, status')
+        .eq('restaurant_id', currentRestaurant.id).eq('reservation_date', selectedDate).neq('status', 'cancelled');
+      const covers = (res || []).reduce((s, b) => s + (b.guest_count || 0), 0);
+      if (covers + selectedGuests > av.max_covers) {
+        return { ok: false, reason: 'Sorry, that day is fully booked. Try another date.' };
+      }
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: true }; // if the check itself fails, don't block booking
+  }
+}
+
 function loadDetailMap() {
   const mapContainer = document.getElementById('detail-map');
   if (!currentRestaurant.latitude || !currentRestaurant.longitude) {
@@ -2292,6 +2346,13 @@ async function confirmBooking() {
   const btn = document.getElementById('book-btn');
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = 'Reserving...';
+
+  const avail = await checkDayAvailability();
+  if (!avail.ok) {
+    showToast(avail.reason);
+    btn.disabled = false; btn.textContent = orig;
+    return;
+  }
 
   const ok = await assignTable();
   if (!ok) {
