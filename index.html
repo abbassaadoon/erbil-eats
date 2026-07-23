@@ -78,9 +78,21 @@
   .btn-accept:active, .btn-decline:active, .friend-add:active, .mini-btn:active, .list-btn:active, .done-btn:active { transform: scale(0.97); }
   .grid-card:active, .feat-card:active, .list-card:active, .upcoming-card:active, .friend-row:active, .date-chip:active { transform: scale(0.985); }
   button, .chip, .seg-tab, .nav-item, .filter-pill, .avatar-btn, .theme-toggle, .date-chip, .wheel-item, .heart-btn, .prof-row { -webkit-user-select: none; user-select: none; }
-  .content { -webkit-overflow-scrolling: touch; }
+  .content { -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+  .content::-webkit-scrollbar { display: none; }
   /* 16px inputs stop iPhones auto-zooming on focus */
   .field-input, .search-bar input, .review-textarea, .info-field input, .info-field textarea { font-size: 16px; }
+  /* soft depth on cards (light mode); dark mode stays flat with gold hairlines */
+  .grid-card, .feat-card, .list-card, .upcoming-card, .booking-card, .summary-card, .conf-card,
+  .stat-card, .mgr-stat, .prof-list, .profile-card, .friend-row, .menu-item, .review-card,
+  .info-field, .search-bar, .method-card {
+    box-shadow: 0 1px 2px rgba(44, 40, 34, 0.04), 0 6px 18px rgba(44, 40, 34, 0.05);
+  }
+  body.dark .grid-card, body.dark .feat-card, body.dark .list-card, body.dark .upcoming-card,
+  body.dark .booking-card, body.dark .summary-card, body.dark .conf-card, body.dark .stat-card,
+  body.dark .mgr-stat, body.dark .prof-list, body.dark .profile-card, body.dark .friend-row,
+  body.dark .menu-item, body.dark .review-card, body.dark .info-field, body.dark .search-bar,
+  body.dark .method-card { box-shadow: none; }
 
   .theme-toggle { width: 40px; height: 40px; border-radius: 50%; background: var(--card); border: 0.5px solid var(--border-2); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
 
@@ -89,6 +101,8 @@
   .spinner { width: 32px; height: 32px; border: 3px solid var(--border-2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-text { font-size: 13px; color: var(--muted); }
+  .loading-logo { font-size: 36px; font-weight: 600; color: var(--serif); letter-spacing: 0.5px; }
+  .loading-sub { font-size: 14px; color: var(--muted); direction: rtl; margin-bottom: 14px; }
 
   /* ===== AUTH SCREEN ===== */
   .auth-screen { display: none; flex-direction: column; flex: 1; padding: 40px 24px; justify-content: center; }
@@ -107,9 +121,7 @@
 
   /* ===== GENERIC MAIN SCREEN ===== */
   .main-screen { display: none; flex-direction: column; flex: 1; }
-  .status-bar { padding: 10px 18px 4px; display: flex; justify-content: space-between; }
-  .status-bar span { color: var(--faint); font-size: 11px; }
-  .header { padding: 6px 18px 14px; }
+  .header { padding: calc(16px + env(safe-area-inset-top)) 18px 12px; }
   .header-top { display: flex; justify-content: space-between; align-items: center; }
   .greeting { font-size: 13px; color: var(--muted); }
   .app-title { font-size: 28px; font-weight: 600; color: var(--serif); margin-top: 2px; }
@@ -170,12 +182,12 @@
   .detail-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
   body.dark .detail-hero img { filter: brightness(0.8); }
   .detail-hero .hero-emoji { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 70px; }
-  .hero-back { position: absolute; top: 14px; left: 14px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; font-size: 18px; color: #2C2C2A; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .hero-back { position: absolute; top: calc(14px + env(safe-area-inset-top)); left: 14px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; font-size: 18px; color: #2C2C2A; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .hero-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 70px; background: linear-gradient(to top, rgba(0,0,0,0.45), transparent); }
   .detail-titlebar { padding: 14px 18px 4px; }
   .rest-detail-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--serif); }
   .rest-detail-meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
-  .map-area { height: 200px; background: var(--card-2); border-radius: 16px; margin: 14px 18px; overflow: hidden; }
+  .map-area { height: 172px; background: var(--card-2); border-radius: 16px; margin: 14px 18px; overflow: hidden; }
   .sub-label { padding: 14px 18px 8px; font-size: 12px; color: var(--muted); font-weight: 500; }
   .guest-btn { flex: 1; background: var(--card); border: 0.5px solid var(--border-2); border-radius: 12px; padding: 10px; font-size: 13px; color: var(--text); cursor: pointer; text-align: center; }
   .guest-btn.selected { background: var(--btn-bg); color: var(--btn-text); border-color: transparent; }
@@ -195,7 +207,7 @@
   /* ===== PAYMENT SCREEN ===== */
   .payment-screen { display: none; flex-direction: column; flex: 1; }
   .back-btn { background: var(--card); border: 0.5px solid var(--border-2); border-radius: 10px; padding: 6px 12px; font-size: 12px; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-  .detail-header { padding: 12px 18px 10px; }
+  .detail-header { padding: calc(16px + env(safe-area-inset-top)) 18px 10px; }
   .summary-card { background: var(--card); border-radius: 16px; border: 0.5px solid var(--border); padding: 14px 16px; margin: 12px 18px 16px; }
   .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
   .summary-row span:first-child { color: var(--muted); }
@@ -411,8 +423,9 @@
 
   <!-- LOADING -->
   <div id="loading-screen" class="loading-screen">
+    <div class="loading-logo serif">Erbil Eats</div>
+    <div class="loading-sub">أكلات أربيل</div>
     <div class="spinner"></div>
-    <div class="loading-text">Loading Erbil Eats...</div>
   </div>
 
   <!-- SIGNUP ROLE SELECTION -->
@@ -481,7 +494,6 @@
 
   <!-- ADMIN APPROVAL DASHBOARD -->
   <div id="admin-screen" class="owner-screen">
-    <div class="status-bar"><span id="admin-clock">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -503,7 +515,6 @@
 
   <!-- HOME -->
   <div id="home-screen" class="main-screen">
-    <div class="status-bar"><span id="clock">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -513,7 +524,6 @@
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
           <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌙</div>
-          <div class="avatar-btn" onclick="openFriends()" title="Friends">👥</div>
           <div class="avatar-btn" onclick="openNotifications()" title="Notifications" style="position:relative;">
             🔔
             <span id="notif-badge" style="display:none; position:absolute; top:-2px; right:-2px; background:#E5484D; color:#fff; font-size:9px; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;">0</span>
@@ -549,7 +559,6 @@
 
   <!-- SEARCH -->
   <div id="search-screen" class="main-screen">
-    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -571,7 +580,6 @@
 
   <!-- MY BOOKINGS -->
   <div id="bookings-screen" class="main-screen">
-    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -586,7 +594,6 @@
 
   <!-- SAVED / FAVOURITES -->
   <div id="saved-screen" class="main-screen">
-    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -601,7 +608,6 @@
 
   <!-- PROFILE -->
   <div id="profile-screen" class="main-screen">
-    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -2628,7 +2634,6 @@ function switchMgr(tab) {
 function mgrHeader() {
   const icon = document.body.classList.contains('dark') ? '☀️' : '🌙';
   return `
-    <div class="status-bar"><span class="clock-slot">9:41</span><span>●●●</span></div>
     <div class="header">
       <div class="header-top">
         <div>
@@ -2961,21 +2966,6 @@ async function saveMgrSettings() {
   Object.assign(ownerRestaurant, payload);
   showToast('Settings saved');
 }
-
-// ===== CLOCK =====
-function updateClock() {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  const clock = document.getElementById('clock');
-  if (clock) clock.textContent = timeStr;
-  document.querySelectorAll('.clock-slot').forEach(c => c.textContent = timeStr);
-  const ownerClock = document.getElementById('owner-clock');
-  if (ownerClock) ownerClock.textContent = timeStr;
-  const adminClock = document.getElementById('admin-clock');
-  if (adminClock) adminClock.textContent = timeStr;
-}
-setInterval(updateClock, 30000);
-updateClock();
 
 init();
 </script>
