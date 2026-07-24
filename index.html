@@ -353,7 +353,12 @@
   .review-rest { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
 
   /* ===== MENU ===== */
+  .menu-head { padding: 20px 18px 8px; border-top: 0.5px solid var(--border); margin-top: 14px; }
+  .menu-title { font-size: 23px; font-weight: 600; color: var(--serif); }
+  .menu-subtitle { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
   .menu-cat { padding: 12px 18px 6px; font-size: 17px; font-weight: 600; color: var(--serif); font-family: 'Cormorant Garamond', serif; }
+  .menu-item.picked { border-color: var(--accent); }
+  body.dark .menu-item.picked { background: rgba(201, 162, 75, 0.07); }
   .menu-item { display: flex; align-items: center; gap: 10px; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; margin: 0 18px 8px; padding: 10px 12px; }
   .menu-photo { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
   .menu-info { flex: 1; min-width: 0; }
@@ -687,10 +692,6 @@
         </div>
         <div style="padding:2px 18px 8px; font-size:11px; color:var(--faint);">Drag to look around · اسحب للنظر حولك</div>
       </div>
-      <div id="menu-section" style="display:none;">
-        <div class="sub-label">Menu | قائمة الطعام</div>
-        <div id="menu-list"></div>
-      </div>
       <div class="sub-label">When would you like to reserve? | متى تريد الحجز؟</div>
       <div class="filter-bar">
         <div class="filter-pill" onclick="openBookingSheet()"><span class="fp-ic">📅</span><span id="pill-date">Today</span><span class="fp-chev">▾</span></div>
@@ -702,6 +703,14 @@
       </div>
       <input type="date" id="booking-date" style="display:none;">
       <input type="time" id="booking-time" style="display:none;">
+      <div id="menu-section" style="display:none;">
+        <div class="menu-head">
+          <div class="menu-title serif">Menu · Pre-order</div>
+          <div class="menu-subtitle">Optional — add dishes now and they'll be ready when you arrive · اطلب مسبقاً</div>
+        </div>
+        <div class="chips" id="menu-cats"></div>
+        <div id="menu-list"></div>
+      </div>
       <div class="sub-label">Reviews · المراجعات</div>
       <div class="reviews-summary" id="d-reviews-summary"></div>
       <button class="explore-btn" id="write-review-btn" style="margin-top:4px;" onclick="openReviewForm()">Write a review</button>
@@ -1897,6 +1906,7 @@ let mgrMenuItems = [];
 let editingMenuId = null;
 let preOrder = {};          // menu_item_id -> { name, price, qty }
 let lastPreorderText = '';  // snapshot for the confirmation email
+let menuCat = 'All';        // active menu category filter
 
 // Customer side: show the restaurant's menu grouped by category
 async function loadDetailMenu() {
@@ -1904,6 +1914,7 @@ async function loadDetailMenu() {
   const list = document.getElementById('menu-list');
   sec.style.display = 'none';
   list.innerHTML = '';
+  menuCat = 'All';
   try {
     const { data, error } = await sb.from('menu_items').select('*')
       .eq('restaurant_id', currentRestaurant.id).eq('is_available', true)
@@ -1916,19 +1927,42 @@ async function loadDetailMenu() {
   sec.style.display = 'block';
 }
 
+function selectMenuCat(i) {
+  const cats = ['All', ...menuCategories()];
+  menuCat = cats[i] || 'All';
+  renderDetailMenuList();
+}
+
+function menuCategories() {
+  const seen = [];
+  detailMenu.forEach(m => {
+    const k = m.category || 'Menu';
+    if (!seen.includes(k)) seen.push(k);
+  });
+  return seen;
+}
+
 function renderDetailMenuList() {
+  // category filter chips
+  const catsEl = document.getElementById('menu-cats');
+  const cats = ['All', ...menuCategories()];
+  catsEl.innerHTML = cats.map((c, i) =>
+    `<div class="chip ${c === menuCat ? 'active' : ''}" onclick="selectMenuCat(${i})">${escapeHtml(c)}</div>`
+  ).join('');
+
+  const shown = menuCat === 'All' ? detailMenu : detailMenu.filter(m => (m.category || 'Menu') === menuCat);
   const list = document.getElementById('menu-list');
   const groups = {};
-  detailMenu.forEach(m => {
+  shown.forEach(m => {
     const k = m.category || 'Menu';
     (groups[k] = groups[k] || []).push(m);
   });
   list.innerHTML = Object.keys(groups).map(cat => `
-    <div class="menu-cat">${escapeHtml(cat)}</div>
+    ${menuCat === 'All' ? `<div class="menu-cat">${escapeHtml(cat)}</div>` : '<div style="height:10px;"></div>'}
     ${groups[cat].map(m => {
       const qty = preOrder[m.id] ? preOrder[m.id].qty : 0;
       return `
-      <div class="menu-item">
+      <div class="menu-item ${qty > 0 ? 'picked' : ''}">
         ${m.photo_url ? `<img class="menu-photo" src="${escapeHtml(m.photo_url)}" loading="lazy" onerror="this.style.display='none'">` : ''}
         <div class="menu-info">
           <div class="menu-name">${escapeHtml(m.name)}</div>
